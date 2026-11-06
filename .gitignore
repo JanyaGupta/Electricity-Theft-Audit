@@ -1,0 +1,5 @@
+__pycache__/
+*.py[cod]
+.env
+backend/data/sgcc_raw/data set.csv
+backend/synthetic_backup/

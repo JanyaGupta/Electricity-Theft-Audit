@@ -1,0 +1,2766 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Vidyut Audit — Theft Investigation Console</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+:root{
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+
+  --bg:#0A0E15;
+  --panel:#121826;
+  --panel-2:#161D2C;
+  --border:#232C3D;
+  --text:#E7EBF2;
+  --text-dim:#8A93A6;
+  --text-faint:#5B6478;
+  --amber:#F0A93E;
+  --amber-dim:#4A3B1E;
+  --blue:#4C8DFF;
+  --blue-dim:#1B2A4A;
+  --green:#3FBF8F;
+  --green-dim:#173A2E;
+  --red:#E5484D;
+  --red-dim:#402024;
+  --mono:'IBM Plex Mono',monospace;
+  --sans:'IBM Plex Sans',sans-serif;
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px);height:100%;}
+*{box-sizing:border-box;}
+body{
+  margin:0;height:100%;min-height:100vh;
+  background:var(--bg);color:var(--text);
+  font-family:var(--sans);
+  -webkit-font-smoothing:antialiased;
+}
+::-webkit-scrollbar{width:8px;height:8px;}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px;}
+::-webkit-scrollbar-track{background:transparent;}
+
+/* ---------- Shell ---------- */
+.shell{display:flex;min-height:100vh;}
+
+/* Sidebar — permanent */
+.sidebar{
+  width:76px;
+  flex:0 0 76px;
+  background:linear-gradient(180deg,#0D121C 0%, #0A0E15 100%);
+  border-right:1px solid var(--border);
+  display:flex;flex-direction:column;
+  padding:14px 0 calc(14px + env(safe-area-inset-bottom,0px));
+  position:sticky;top:0;height:100vh;
+  z-index:20;
+}
+@media (min-width:760px){
+  .sidebar{width:230px;flex-basis:230px;padding:20px 14px calc(20px + env(safe-area-inset-bottom,0px));}
+}
+.brand{
+  display:flex;align-items:center;gap:10px;
+  padding:6px 0 22px 0;justify-content:center;
+  border-bottom:1px solid var(--border);margin-bottom:16px;
+}
+@media (min-width:760px){ .brand{justify-content:flex-start;padding:6px 8px 20px 8px;} }
+.brand-mark{
+  width:34px;height:34px;flex:0 0 34px;border-radius:9px;
+  background:radial-gradient(circle at 30% 20%, #FFCE7A, var(--amber) 55%, #B9760E 100%);
+  display:flex;align-items:center;justify-content:center;
+  font-size:17px;color:#231404;font-weight:700;
+  box-shadow:0 0 0 1px rgba(240,169,62,.25), 0 4px 14px -4px rgba(240,169,62,.55);
+}
+.brand-text{display:none;line-height:1.15;}
+@media (min-width:760px){ .brand-text{display:block;} }
+.brand-text b{display:block;font-size:14.5px;letter-spacing:.2px;}
+.brand-text span{display:block;font-size:11px;color:var(--text-faint);margin-top:2px;}
+
+.nav-group{margin-bottom:18px;}
+.nav-label{
+  display:none;font-size:10.5px;color:var(--text-faint);
+  padding:0 10px;margin-bottom:6px;letter-spacing:.03em;
+}
+@media (min-width:760px){ .nav-label{display:block;} }
+.nav-item{
+  display:flex;align-items:center;gap:12px;
+  padding:9px 10px;border-radius:9px;cursor:pointer;
+  color:var(--text-dim);font-size:13.5px;font-weight:500;
+  margin-bottom:2px;border:1px solid transparent;
+  justify-content:center;
+}
+@media (min-width:760px){ .nav-item{justify-content:flex-start;} }
+.nav-item .ic{width:19px;height:19px;flex:0 0 19px;display:flex;align-items:center;justify-content:center;}
+.nav-item .lbl{display:none;white-space:nowrap;}
+@media (min-width:760px){ .nav-item .lbl{display:inline;} }
+.nav-item:hover{background:var(--panel-2);color:var(--text);}
+.nav-item.active{
+  background:var(--amber-dim);color:var(--amber);
+  border-color:rgba(240,169,62,.28);
+}
+.nav-item.active svg{stroke:var(--amber);}
+.nav-item svg{stroke:currentColor;}
+
+.sidebar-foot{margin-top:auto;padding-top:14px;border-top:1px solid var(--border);}
+.grid-pulse{
+  display:flex;align-items:center;gap:8px;justify-content:center;
+  font-family:var(--mono);font-size:10.5px;color:var(--text-faint);padding:0 6px;
+}
+@media (min-width:760px){ .grid-pulse{justify-content:flex-start;} }
+.pulse-dot{width:7px;height:7px;border-radius:50%;background:var(--green);flex:0 0 7px;
+  box-shadow:0 0 0 0 rgba(63,191,143,.6);animation:pulse 2.2s infinite;}
+@keyframes pulse{
+  0%{box-shadow:0 0 0 0 rgba(63,191,143,.55);}
+  70%{box-shadow:0 0 0 7px rgba(63,191,143,0);}
+  100%{box-shadow:0 0 0 0 rgba(63,191,143,0);}
+}
+.grid-pulse .txt{display:none;}
+@media (min-width:760px){ .grid-pulse .txt{display:inline;} }
+
+/* ---------- Main ---------- */
+.main{flex:1 1 auto;min-width:0;display:flex;flex-direction:column;}
+.topbar{
+  position:sticky;top:0;z-index:10;
+  padding-top:calc(14px + env(safe-area-inset-top,0px));
+  background:rgba(10,14,21,.88);backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--border);
+  padding-left:16px;padding-right:16px;padding-bottom:14px;
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+}
+.page-title{font-size:18px;font-weight:600;letter-spacing:-.01em;}
+.page-sub{font-size:12.5px;color:var(--text-dim);margin-top:2px;}
+.topbar-right{display:flex;align-items:center;gap:10px;}
+.search{
+  display:none;align-items:center;gap:8px;background:var(--panel);
+  border:1px solid var(--border);border-radius:9px;padding:7px 11px;
+  color:var(--text-dim);font-size:13px;width:220px;
+}
+@media (min-width:640px){ .search{display:flex;} }
+.search input{background:none;border:none;outline:none;color:var(--text);font-family:var(--sans);font-size:13px;width:100%;}
+.avatar{
+  width:32px;height:32px;border-radius:8px;background:var(--blue-dim);
+  border:1px solid rgba(76,141,255,.3);color:var(--blue);
+  display:flex;align-items:center;justify-content:center;font-size:12.5px;font-weight:600;font-family:var(--mono);
+  flex:0 0 32px;
+}
+
+.content{padding:18px 16px 48px 16px;max-width:1180px;width:100%;margin:0 auto;}
+.view{display:none;}
+.view.active{display:block;}
+
+/* ---------- Cards / stats ---------- */
+.stat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:18px;}
+@media (min-width:640px){ .stat-grid{grid-template-columns:repeat(4,1fr);} }
+.stat-card{
+  background:var(--panel);border:1px solid var(--border);border-radius:12px;
+  padding:14px;position:relative;overflow:hidden;
+}
+.stat-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+.stat-label{font-size:11.5px;color:var(--text-dim);}
+.stat-value{font-family:var(--mono);font-size:23px;font-weight:600;letter-spacing:-.02em;}
+.stat-delta{font-size:11px;margin-top:4px;font-family:var(--mono);}
+.up{color:var(--red);} .down{color:var(--green);}
+.chip{font-size:10px;padding:3px 7px;border-radius:99px;font-weight:600;font-family:var(--mono);}
+.chip.amber{background:var(--amber-dim);color:var(--amber);}
+.chip.red{background:var(--red-dim);color:var(--red);}
+.chip.green{background:var(--green-dim);color:var(--green);}
+.chip.blue{background:var(--blue-dim);color:var(--blue);}
+
+.panel{
+  background:var(--panel);border:1px solid var(--border);border-radius:12px;
+  padding:16px;margin-bottom:14px;
+}
+.panel-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:10px;}
+.panel-title{font-size:14.5px;font-weight:600;}
+.panel-note{font-size:11.5px;color:var(--text-faint);}
+.two-col{display:grid;grid-template-columns:1fr;gap:14px;}
+@media (min-width:900px){ .two-col{grid-template-columns:1.3fr 1fr;} }
+.chart-wrap{position:relative;height:230px;}
+.chart-wrap.sm{height:190px;}
+
+/* alert rows */
+.row-list{display:flex;flex-direction:column;gap:0;}
+.arow{
+  display:flex;align-items:center;gap:12px;padding:11px 4px;
+  border-bottom:1px solid var(--border);cursor:pointer;
+}
+.arow:last-child{border-bottom:none;}
+.arow:hover{background:var(--panel-2);border-radius:8px;}
+.dot{width:9px;height:9px;border-radius:50%;flex:0 0 9px;}
+.dot.high{background:var(--red);} .dot.med{background:var(--amber);} .dot.low{background:var(--green);}
+.arow-main{flex:1;min-width:0;}
+.arow-name{font-size:13.5px;font-weight:500;}
+.arow-meta{font-size:11.5px;color:var(--text-faint);font-family:var(--mono);margin-top:1px;}
+.arow-score{font-family:var(--mono);font-size:13px;font-weight:600;}
+
+/* table */
+.table-scroll{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;min-width:600px;}
+th{
+  text-align:left;font-size:11px;color:var(--text-faint);font-weight:500;
+  padding:8px 10px;border-bottom:1px solid var(--border);white-space:nowrap;
+}
+td{padding:10px 10px;border-bottom:1px solid var(--border);font-size:13px;white-space:nowrap;}
+tbody tr{cursor:pointer;}
+tbody tr:hover{background:var(--panel-2);}
+.mono{font-family:var(--mono);}
+.risk-bar{width:64px;height:6px;border-radius:3px;background:#1c2333;overflow:hidden;display:inline-block;vertical-align:middle;margin-right:8px;}
+.risk-fill{height:100%;border-radius:3px;}
+
+.controls{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;}
+.pill-btn{
+  background:var(--panel-2);border:1px solid var(--border);color:var(--text-dim);
+  padding:7px 13px;border-radius:99px;font-size:12.5px;cursor:pointer;font-family:var(--sans);
+}
+.pill-btn.active{background:var(--amber-dim);border-color:rgba(240,169,62,.3);color:var(--amber);}
+.pill-btn:focus-visible, .nav-item:focus-visible, .btn:focus-visible{outline:2px solid var(--blue);outline-offset:2px;}
+
+.btn{
+  background:var(--amber);color:#241404;border:none;padding:9px 15px;border-radius:9px;
+  font-size:13px;font-weight:600;cursor:pointer;font-family:var(--sans);
+}
+.btn.ghost{background:transparent;border:1px solid var(--border);color:var(--text);}
+.btn.blue{background:var(--blue);color:#0a1428;}
+
+/* drawer */
+.drawer-backdrop{
+  position:fixed;inset:0;background:rgba(4,6,10,.6);backdrop-filter:blur(2px);
+  z-index:30;display:none;
+}
+.drawer-backdrop.open{display:block;}
+.drawer{
+  position:fixed;top:0;right:0;height:100%;width:100%;max-width:420px;
+  background:var(--panel);border-left:1px solid var(--border);
+  z-index:31;transform:translateX(100%);transition:transform .28s ease;
+  overflow-y:auto;padding:calc(18px + env(safe-area-inset-top,0px)) 18px calc(24px + env(safe-area-inset-bottom,0px));
+}
+.drawer.open{transform:translateX(0);}
+.drawer-close{
+  position:absolute;top:calc(16px + env(safe-area-inset-top,0px));right:16px;
+  width:30px;height:30px;border-radius:8px;background:var(--panel-2);border:1px solid var(--border);
+  color:var(--text-dim);cursor:pointer;display:flex;align-items:center;justify-content:center;
+}
+.gauge-wrap{display:flex;flex-direction:column;align-items:center;padding:10px 0 4px;}
+.feat-row{display:flex;align-items:center;justify-content:space-between;padding:7px 0;font-size:12.5px;border-bottom:1px dashed var(--border);}
+.feat-row:last-child{border-bottom:none;}
+.feat-bar-bg{width:100px;height:5px;background:#1c2333;border-radius:3px;overflow:hidden;}
+.feat-bar-fill{height:100%;background:var(--blue);}
+
+.hash-block{
+  background:var(--bg);border:1px solid var(--border);border-radius:8px;
+  padding:9px 10px;font-family:var(--mono);font-size:10.8px;color:var(--text-dim);
+  word-break:break-all;margin-top:6px;
+}
+.verify-ok{color:var(--green);}
+.verify-fail{color:var(--red);}
+
+.status-select{
+  background:var(--panel-2);border:1px solid var(--border);color:var(--text);
+  padding:6px 9px;border-radius:8px;font-size:12.5px;font-family:var(--sans);
+}
+.section-tag{font-size:10.5px;color:var(--text-faint);margin:16px 0 6px;}
+.footnote{font-size:11.5px;color:var(--text-faint);line-height:1.6;margin-top:6px;}
+
+/* ---------- Forms (new consumer / investigation outcome) ---------- */
+.field{margin-bottom:12px;}
+.field label{display:block;font-size:11.5px;color:var(--text-dim);margin-bottom:5px;}
+.field input, .field select, .field textarea{
+  width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);
+  padding:9px 10px;border-radius:8px;font-family:var(--sans);font-size:13.5px;
+}
+.field textarea{resize:vertical;min-height:64px;font-family:var(--sans);}
+.field input:focus, .field select:focus, .field textarea:focus{outline:2px solid var(--blue);outline-offset:1px;}
+.field-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.form-actions{display:flex;gap:8px;margin-top:4px;}
+.toast{
+  position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));
+  transform:translateX(-50%) translateY(16px);
+  background:var(--panel-2);border:1px solid var(--border);color:var(--text);
+  padding:10px 16px;border-radius:9px;font-size:12.5px;z-index:50;
+  opacity:0;pointer-events:none;transition:opacity .25s ease, transform .25s ease;
+  box-shadow:0 10px 30px -8px rgba(0,0,0,.5);
+}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.toast .dotv{width:7px;height:7px;border-radius:50%;background:var(--green);display:inline-block;margin-right:8px;}
+
+.modal-backdrop{
+  position:fixed;inset:0;background:rgba(4,6,10,.6);backdrop-filter:blur(2px);
+  z-index:40;display:none;align-items:flex-start;justify-content:center;
+  padding:calc(24px + env(safe-area-inset-top,0px)) 16px 24px;overflow-y:auto;
+}
+.modal-backdrop.open{display:flex;}
+.modal{
+  background:var(--panel);border:1px solid var(--border);border-radius:14px;
+  padding:20px;width:100%;max-width:420px;position:relative;
+}
+.modal h3{margin:0 0 3px;font-size:16px;}
+.modal .modal-sub{font-size:12px;color:var(--text-faint);margin-bottom:16px;}
+.modal-close{
+  position:absolute;top:14px;right:14px;width:28px;height:28px;border-radius:8px;
+  background:var(--panel-2);border:1px solid var(--border);color:var(--text-dim);
+  cursor:pointer;display:flex;align-items:center;justify-content:center;
+}
+.investigation-box{
+  border:1px solid var(--border);border-radius:10px;padding:12px;margin-top:6px;background:var(--bg);
+}
+.inv-hash-note{font-size:11px;color:var(--text-faint);margin-top:8px;line-height:1.5;}
+@keyframes spin{ to{ transform:rotate(360deg); } }
+
+/* =====================================================================
+   v2 — chart grids, KPI strips, audit chain cards
+   ===================================================================== */
+.content{max-width:1240px;}
+.grid-3,.grid-21,.grid-even{display:grid;grid-template-columns:1fr;gap:14px;margin-bottom:14px;}
+.grid-3>.panel,.grid-21>.panel,.grid-even>.panel{margin-bottom:0;min-width:0;}
+@media (min-width:1000px){
+  .grid-3{grid-template-columns:repeat(3,minmax(0,1fr));}
+  .grid-21{grid-template-columns:minmax(0,2fr) minmax(0,1fr);}
+  .grid-even{grid-template-columns:repeat(2,minmax(0,1fr));}
+}
+.chart-wrap.tall{height:290px;}
+.chart-wrap canvas{max-width:100%;}
+.chart-empty{
+  position:absolute;inset:0;display:none;align-items:center;justify-content:center;text-align:center;
+  color:var(--text-faint);font-size:12px;line-height:1.6;padding:0 24px;
+}
+.panel-head .pill-btn{padding:4px 10px;font-size:11px;}
+.kpi-strip{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:14px;}
+@media (min-width:900px){ .kpi-strip.n5{grid-template-columns:repeat(5,1fr);} .kpi-strip.n4{grid-template-columns:repeat(4,1fr);} }
+.kpi-strip .stat-value{font-size:21px;}
+.stat-bar{height:4px;border-radius:2px;background:#1c2333;margin-top:10px;overflow:hidden;}
+.stat-bar>i{display:block;height:100%;border-radius:2px;background:var(--amber);}
+.chip.grey{background:#1c2333;color:var(--text-dim);}
+.chip.violet{background:#2a2450;color:#B3A8FF;}
+.head-actions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.verdict{font-size:12px;font-family:var(--mono);}
+.verdict.ok{color:var(--green);} .verdict.bad{color:var(--red);} .verdict.wait{color:var(--text-dim);}
+
+/* ---- audit chain ---- */
+.chain-viz{display:flex;align-items:stretch;overflow-x:auto;padding:8px 2px 18px;gap:0;scroll-behavior:smooth;}
+.cnode{
+  flex:0 0 272px;background:var(--panel-2);border:1px solid var(--border);border-radius:12px;
+  padding:14px;display:flex;flex-direction:column;gap:11px;transition:box-shadow .25s,border-color .25s;
+}
+.cnode.genesis{flex-basis:196px;background:transparent;border-style:dashed;}
+.cnode.superseded{background:transparent;border-style:dashed;}
+.cnode.superseded .cnode-title{color:var(--text-dim);}
+.cnode.tampered{border-color:var(--red);box-shadow:0 0 0 1px rgba(229,72,77,.3);}
+.cnode.flash{box-shadow:0 0 0 2px var(--amber);}
+.cnode.wait{border-style:dashed;justify-content:center;color:var(--text-faint);font-size:12.5px;line-height:1.6;}
+.cnode-head{display:flex;gap:11px;align-items:center;}
+.cnode-id{flex:1;min-width:0;}
+.cnode-block{font-family:var(--mono);font-size:11px;color:var(--text-faint);display:flex;align-items:center;justify-content:space-between;gap:8px;}
+.cnode-title{font-size:14.5px;font-weight:600;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.cnode-sub{font-size:11.5px;color:var(--text-faint);line-height:1.55;}
+.cnode-rows{display:grid;gap:8px;border-top:1px solid var(--border);padding-top:11px;}
+.crow{display:flex;justify-content:space-between;gap:10px;font-size:11.5px;align-items:baseline;}
+.crow .k{color:var(--text-faint);flex:0 0 auto;}
+.crow .v{font-family:var(--mono);color:var(--text-dim);text-align:right;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.hash-copy{cursor:copy;border-bottom:1px dotted var(--text-faint);}
+.hash-copy:hover{color:var(--text);}
+.cnode .pill-btn{align-self:flex-start;padding:5px 11px;font-size:11.5px;}
+.cnode a{color:var(--blue);text-decoration:none;}
+.cnode a:hover{text-decoration:underline;}
+.fp{width:40px;height:40px;flex:0 0 40px;border-radius:9px;background:var(--bg);border:1px solid var(--border);padding:4px;display:block;}
+.fp svg{width:100%;height:100%;display:block;}
+.cjoin{flex:0 0 84px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:7px;font-family:var(--mono);font-size:9.5px;text-align:center;padding:0 4px;}
+.cjoin .bar{height:2px;width:100%;position:relative;background:var(--green);}
+.cjoin .bar::after{content:'';position:absolute;right:-1px;top:-4px;border:5px solid transparent;border-left-color:var(--green);}
+.cjoin{color:var(--green);}
+.cjoin.bad{color:var(--red);}
+.cjoin.bad .bar{background:repeating-linear-gradient(90deg,var(--red) 0 6px,transparent 6px 10px);}
+.cjoin.bad .bar::after{border-left-color:var(--red);}
+.cjoin.pending{color:var(--text-faint);}
+.cjoin.pending .bar{background:var(--border);}
+.cjoin.pending .bar::after{border-left-color:var(--border);}
+.chain-legend{display:flex;flex-wrap:wrap;gap:14px;font-size:11.5px;color:var(--text-faint);margin-top:2px;line-height:1.6;}
+.chain-legend b{color:var(--text-dim);font-weight:500;}
+
+/* revision history */
+.rev-case{padding:12px 0;border-bottom:1px solid var(--border);}
+.rev-case:last-child{border-bottom:none;}
+.rev-head{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:13px;font-weight:500;}
+.rev-steps{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:9px;}
+.rev-step{display:inline-flex;align-items:center;gap:7px;background:var(--panel-2);border:1px solid var(--border);border-radius:99px;padding:4px 11px;font-size:11.5px;cursor:pointer;color:var(--text-dim);font-family:var(--sans);}
+.rev-step:hover{color:var(--text);}
+.rev-step.cur{border-color:rgba(240,169,62,.4);color:var(--amber);}
+.rev-step .d{width:7px;height:7px;border-radius:50%;flex:0 0 7px;}
+.rev-sep{color:var(--text-faint);font-size:11px;}
+
+/* confusion matrix */
+.cm{display:grid;grid-template-columns:auto 1fr 1fr;gap:6px;align-items:stretch;font-size:11.5px;}
+.cm-h{color:var(--text-faint);text-align:center;padding:2px 0 4px;font-size:11px;}
+.cm-r{color:var(--text-faint);display:flex;align-items:center;padding-right:6px;font-size:11px;max-width:74px;line-height:1.4;}
+.cm-cell{border-radius:10px;padding:16px 8px;text-align:center;border:1px solid transparent;}
+.cm-cell b{display:block;font-family:var(--mono);font-size:19px;font-weight:600;margin:4px 0 2px;}
+.cm-cell span{font-size:10.5px;color:var(--text-dim);}
+.cm-cell small{font-size:10px;letter-spacing:.02em;color:var(--text-dim);}
+.cm-cell.good{background:rgba(63,191,143,var(--a,.15));border-color:rgba(63,191,143,.25);}
+.cm-cell.bad{background:rgba(229,72,77,var(--a,.15));border-color:rgba(229,72,77,.25);}
+.empty-static{color:var(--text-faint);font-size:12px;line-height:1.7;padding:36px 16px;text-align:center;}
+
+/* analyze charts */
+.an-grid{display:grid;grid-template-columns:1fr;gap:12px;margin:6px 0 4px;}
+@media (min-width:900px){ .an-grid{grid-template-columns:repeat(2,minmax(0,1fr));} .an-grid .wide{grid-column:1/-1;} }
+.an-card{background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:12px;min-width:0;}
+.an-card .t{font-size:12.5px;font-weight:600;}
+.an-card .n{font-size:11px;color:var(--text-faint);margin:2px 0 8px;line-height:1.5;}
+.an-card .chart-wrap{height:200px;}
+.ledger-id{max-width:170px;overflow:hidden;text-overflow:ellipsis;}
+tr.hl{background:var(--amber-dim)!important;}
+</style>
+</head>
+<body>
+<div class="shell">
+
+  <!-- Sidebar -->
+  <nav class="sidebar" aria-label="Primary">
+    <div class="brand">
+      <div class="brand-mark">⚡</div>
+      <div class="brand-text"><b>Vidyut Audit</b><span>Theft investigation console</span></div>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-label">monitor</div>
+      <div class="nav-item active" data-view="overview">
+        <span class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="9" rx="1.5"/><rect x="14" y="3" width="7" height="5" rx="1.5"/><rect x="14" y="12" width="7" height="9" rx="1.5"/><rect x="3" y="16" width="7" height="5" rx="1.5"/></svg></span>
+        <span class="lbl">Overview</span>
+      </div>
+      <div class="nav-item" data-view="consumers">
+        <span class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6"/><path d="M16.5 4.8a3.2 3.2 0 0 1 0 6.2"/><path d="M21.5 20c0-3-2-5.2-5-5.9"/></svg></span>
+        <span class="lbl">Consumers</span>
+      </div>
+    </div>
+
+    <div class="nav-group">
+      <div class="nav-label">investigate</div>
+      <div class="nav-item" data-view="investigations">
+        <span class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m20 20-4.4-4.4"/></svg></span>
+        <span class="lbl">Investigations</span>
+      </div>
+      <div class="nav-item" data-view="blockchain">
+        <span class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="9" width="6" height="6" rx="1"/><rect x="15" y="9" width="6" height="6" rx="1"/><rect x="9" y="3" width="6" height="6" rx="1"/><rect x="9" y="15" width="6" height="6" rx="1"/><path d="M9 12H6M18 12h-3M12 9V6M12 18v-3"/></svg></span>
+        <span class="lbl">Audit chain</span>
+      </div>
+      <div class="nav-item" data-view="model">
+        <span class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19h16M7 19V9M12 19V5M17 19v-7"/></svg></span>
+        <span class="lbl">Model insights</span>
+      </div>
+      <div class="nav-item" data-view="analyze">
+        <span class="ic"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3v4M15 3v4M4 11h16M5 7h14a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1Z"/><path d="m9.5 15 2 2 3.5-3.5"/></svg></span>
+        <span class="lbl">Analyze meter</span>
+      </div>
+    </div>
+
+    <div class="sidebar-foot">
+      <div class="grid-pulse"><span class="pulse-dot" id="syncDot"></span><span class="txt" id="syncText">Connecting…</span></div>
+      <div style="margin-top:10px;text-align:center;">
+        <span id="resetDemoBtn" style="font-size:10.5px;color:var(--text-faint);cursor:pointer;text-decoration:underline;">reset demo data</span>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Main -->
+  <div class="main">
+    <div class="topbar">
+      <div>
+        <div class="page-title" id="pageTitle">Overview</div>
+        <div class="page-sub" id="pageSub">Grid-wide risk summary — DISCOM Circle 4</div>
+      </div>
+      <div class="topbar-right">
+        <div class="search"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m20 20-4.4-4.4"/></svg><input placeholder="Search consumer / meter ID" id="searchInput"></div>
+        <span class="chip blue" id="connStatus" style="cursor:pointer;" title="Click to change the API address">connecting…</span>
+        <div class="avatar">IN</div>
+      </div>
+    </div>
+
+    <div style="background:var(--amber-dim);border-bottom:1px solid rgba(240,169,62,.25);padding:8px 16px;font-size:12px;color:var(--amber);text-align:center;">
+      ⚠ The risk score is a <b>prioritisation aid for human investigation</b> — it never confirms theft by itself. Every high-risk case still requires a field inspection and a human-recorded outcome.
+    </div>
+
+    <div class="content">
+
+      <!-- OVERVIEW -->
+      <section class="view active" id="view-overview">
+        <div class="stat-grid">
+          <div class="stat-card">
+            <div class="stat-top"><span class="stat-label">Meters monitored</span></div>
+            <div class="stat-value" id="statTotalMeters">—</div>
+            <div class="stat-delta" id="statTotalDelta">&nbsp;</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-top"><span class="stat-label">High-risk meters</span><span class="chip red">HIGH</span></div>
+            <div class="stat-value" id="statHighRisk">—</div>
+            <div class="stat-delta" id="statHighDelta">&nbsp;</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-top"><span class="stat-label">Open investigations</span><span class="chip amber">ACTIVE</span></div>
+            <div class="stat-value" id="statOpenInv">—</div>
+            <div class="stat-delta" id="statOpenDelta">&nbsp;</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-top"><span class="stat-label">Audit chain integrity</span><span class="chip green" id="statChainChip">—</span></div>
+            <div class="stat-value" id="statChainIntegrity">—</div>
+            <div class="stat-delta" id="statChainDelta">&nbsp;</div>
+          </div>
+        </div>
+
+        <div class="two-col">
+          <div class="panel">
+            <div class="panel-head">
+              <div><div class="panel-title" id="loadChartTitle">Grid consumption trend</div><div class="panel-note" id="loadChartNote">Loading…</div></div>
+            </div>
+            <div class="chart-wrap"><canvas id="loadChart"></canvas></div>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><div class="panel-title">Risk distribution</div></div>
+            <div class="chart-wrap sm"><canvas id="riskDist"></canvas></div>
+          </div>
+        </div>
+
+        <div class="grid-21">
+          <div class="panel">
+            <div class="panel-head">
+              <div><div class="panel-title">Risk score distribution</div><div class="panel-note" id="ovHistNote">Every scored meter, in 0.05 score bands</div></div>
+              <span class="pill-btn" id="ovHistLogBtn">Log scale</span>
+            </div>
+            <div class="chart-wrap"><canvas id="ovHist"></canvas></div>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><div><div class="panel-title">Investigation outcomes</div><div class="panel-note">Latest outcome of each case</div></div></div>
+            <div class="chart-wrap"><canvas id="ovOutcome"></canvas></div>
+          </div>
+        </div>
+
+        <div class="grid-even">
+          <div class="panel">
+            <div class="panel-head"><div><div class="panel-title">Ten highest-risk meters</div><div class="panel-note">Click a bar to open the meter</div></div></div>
+            <div class="chart-wrap tall"><canvas id="ovTop"></canvas></div>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><div><div class="panel-title">What drives each tier</div><div class="panel-note">Average RF probability, K-means score and blended risk per tier</div></div></div>
+            <div class="chart-wrap tall"><canvas id="ovTierMeans"></canvas></div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <div><div class="panel-title">Latest high-priority alerts</div><div class="panel-note">Generated by combined Random Forest + K-means risk score</div></div>
+            <span class="pill-btn" onclick="switchView('consumers')">View all →</span>
+          </div>
+          <div class="row-list" id="alertRows"></div>
+        </div>
+      </section>
+
+      <!-- CONSUMERS -->
+      <section class="view" id="view-consumers">
+        <div class="panel-note" id="consumerSourceNote" style="margin:0 0 8px;">Loading the meter list…</div>
+        <div class="grid-21">
+          <div class="panel">
+            <div class="panel-head">
+              <div><div class="panel-title">Score distribution by tier</div><div class="panel-note" id="consHistNote">Stacked by risk tier</div></div>
+              <span class="pill-btn" id="consHistLogBtn">Log scale</span>
+            </div>
+            <div class="chart-wrap"><canvas id="consHist"></canvas></div>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><div><div class="panel-title">How each model scores meters</div><div class="panel-note" id="consModelsNote">Share of meters per score band</div></div></div>
+            <div class="chart-wrap"><canvas id="consModels"></canvas></div>
+          </div>
+        </div>
+        <div class="controls" style="justify-content:space-between;">
+          <div class="controls" style="margin:0;">
+            <span class="pill-btn active" data-risk="all">All</span>
+            <span class="pill-btn" data-risk="high">High risk</span>
+            <span class="pill-btn" data-risk="medium">Medium risk</span>
+            <span class="pill-btn" data-risk="low">Low risk</span>
+          </div>
+          <button class="btn blue" id="openAddConsumer" type="button">+ New meter</button>
+        </div>
+        <div class="panel">
+          <div class="table-scroll">
+            <table>
+              <thead><tr>
+                <th>CONS_NO</th><th>Risk score</th><th>RF prob.</th><th>K-means score</th><th>Status</th>
+              </tr></thead>
+              <tbody id="consumerTbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- INVESTIGATIONS -->
+      <section class="view" id="view-investigations">
+        <div class="kpi-strip n5" id="invKpis"></div>
+        <div class="grid-3">
+          <div class="panel">
+            <div class="panel-head"><div><div class="panel-title">Outcomes</div><div class="panel-note">Where every case stands</div></div></div>
+            <div class="chart-wrap"><canvas id="invOutcome"></canvas></div>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><div><div class="panel-title">Inspector workload</div><div class="panel-note">Cases per inspector, by outcome</div></div></div>
+            <div class="chart-wrap"><canvas id="invInspector"></canvas></div>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><div><div class="panel-title">Cases opened</div><div class="panel-note">Per day, with running total</div></div></div>
+            <div class="chart-wrap"><canvas id="invTimeline"></canvas></div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><div><div class="panel-title">Risk score of each case</div><div class="panel-note">Score at the time the case was opened; bar outline shows the outcome</div></div></div>
+          <div class="chart-wrap"><canvas id="invRisk"></canvas></div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><div class="panel-title">Investigation queue</div><div class="panel-note" id="invCount"></div></div>
+          <div class="table-scroll">
+            <table>
+              <thead><tr><th>Case</th><th>CONS_NO</th><th>Inspector</th><th>Opened</th><th>Risk score</th><th>Outcome</th></tr></thead>
+              <tbody id="invTbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- BLOCKCHAIN -->
+      <section class="view" id="view-blockchain">
+        <div class="kpi-strip n5" id="chainKpis"></div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <div><div class="panel-title">Tamper-evident audit ledger</div><div class="panel-note">Every block that exists, oldest on the left. A configured Sepolia account also publishes the same hash. Raw meter readings stay in CSV.</div></div>
+            <div class="head-actions">
+              <span class="verdict wait" id="chainVerdict"></span>
+              <button class="btn ghost" id="verifyChainBtn" type="button">Verify entire chain</button>
+            </div>
+          </div>
+          <div class="chain-viz" id="chainViz"></div>
+          <div class="chain-legend" id="chainLegend"></div>
+        </div>
+
+        <div class="grid-3">
+          <div class="panel">
+            <div class="panel-head"><div><div class="panel-title">Ledger growth</div><div class="panel-note">Blocks appended over time</div></div></div>
+            <div class="chart-wrap"><canvas id="chainGrowth"></canvas></div>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><div><div class="panel-title">What was recorded</div><div class="panel-note">Outcome in each current record</div></div></div>
+            <div class="chart-wrap"><canvas id="chainOutcomes"></canvas></div>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><div><div class="panel-title">Risk score at each save</div><div class="panel-note">Faded bars are superseded saves</div></div></div>
+            <div class="chart-wrap"><canvas id="chainRisk"></canvas></div>
+          </div>
+        </div>
+
+        <div class="grid-even">
+          <div class="panel">
+            <div class="panel-head"><div><div class="panel-title">Time between blocks</div><div class="panel-note">Minutes since the previous block</div></div></div>
+            <div class="chart-wrap"><canvas id="chainGaps"></canvas></div>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><div><div class="panel-title">Revision history</div><div class="panel-note">Saving a case again adds a block. The earlier block stays in the chain.</div></div></div>
+            <div id="chainRevisions"></div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head"><div><div class="panel-title">Ledger entries</div><div class="panel-note">Click a row to find its block. Click a hash to copy it.</div></div></div>
+          <div class="table-scroll">
+            <table>
+              <thead><tr><th>Block</th><th>Case</th><th>Outcome</th><th>Status</th><th>Saved</th><th>Block hash</th><th>Link</th><th>Sepolia</th></tr></thead>
+              <tbody id="chainTbody"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- MODEL -->
+      <section class="view" id="view-model">
+        <div class="two-col">
+          <div class="panel">
+            <div class="panel-head"><div><div class="panel-title">Random Forest — feature importance</div><div class="panel-note" id="featChartNote">&nbsp;</div></div></div>
+            <div class="chart-wrap"><canvas id="featChart"></canvas></div>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><div><div class="panel-title">RF probability vs. K-means anomaly score</div><div class="panel-note" id="clusterChartNote">&nbsp;</div></div></div>
+            <div class="chart-wrap"><canvas id="clusterChart"></canvas></div>
+          </div>
+        </div>
+        <div class="grid-3">
+          <div class="panel">
+            <div class="panel-head"><div><div class="panel-title">Confusion matrix</div><div class="panel-note" id="cmNote">Random Forest on its held-out test split</div></div></div>
+            <div id="cmBox"></div>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><div><div class="panel-title">Precision, recall and F1</div><div class="panel-note">Per class, on the test split</div></div></div>
+            <div class="chart-wrap tall"><canvas id="mdlClass"></canvas></div>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><div><div class="panel-title">How the score is blended</div><div class="panel-note">Weight each model has in the risk score</div></div></div>
+            <div class="chart-wrap tall"><canvas id="mdlBlend"></canvas></div>
+          </div>
+        </div>
+        <div class="grid-even">
+          <div class="panel">
+            <div class="panel-head"><div><div class="panel-title">Behaviour profile by tier</div><div class="panel-note" id="radarNote">Average percentile rank of each feature (50 = typical meter)</div></div></div>
+            <div class="chart-wrap tall"><canvas id="mdlRadar"></canvas></div>
+          </div>
+          <div class="panel">
+            <div class="panel-head"><div><div class="panel-title">Feature importance, cumulative</div><div class="panel-note">How few features carry most of the model's weight</div></div></div>
+            <div class="chart-wrap tall"><canvas id="mdlPareto"></canvas></div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="panel-head"><div class="panel-title">Model registry</div></div>
+          <div class="table-scroll">
+            <table>
+              <thead><tr><th>Model</th><th>Version</th><th>Trained on</th><th>Accuracy / Silhouette</th><th>Status</th></tr></thead>
+              <tbody id="modelRegistryBody">
+                <tr><td>Random Forest classifier</td><td class="mono">rf-v2.3</td><td id="rfTrainedOn">Behavioural features, supervised</td><td class="mono" id="rfMetricCell">—</td><td><span class="chip amber">loading</span></td></tr>
+                <tr><td>K-means anomaly model</td><td class="mono">km-v1.0</td><td id="kmTrainedOn">Behavioural features, unsupervised</td><td class="mono" id="kmMetricCell">—</td><td><span class="chip amber">loading</span></td></tr>
+                <tr><td>Risk score blender</td><td class="mono">blend-v1.0</td><td>0.55·RF + 0.45·K-means</td><td class="mono">—</td><td><span class="chip green">active</span></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ANALYZE METER -->
+      <section class="view" id="view-analyze">
+        <div class="panel" id="analyzeOfflinePanel" style="display:none;">
+          <div class="panel-title">Backend not connected</div>
+          <div class="footnote" style="margin-top:8px;">
+            Analyze Meter runs the real feature-engineering + Random Forest + K-means pipeline on
+            the server — it can't be approximated in the browser. Connect the backend (see the
+            status pill, top right) to use this feature.
+          </div>
+        </div>
+
+        <div id="analyzeOnlineContent">
+
+          <div class="panel">
+            <div class="panel-title">How to use this</div>
+            <ol style="margin:10px 0 0 18px;padding:0;font-size:12.5px;color:var(--text-dim);line-height:1.9;">
+              <li>Enter a CONS_NO. SGCC has no customer name or category, and the model never sees either.</li>
+              <li>Paste one row per day: <code class="mono">date, daily kWh</code>. Upload a <code class="mono">.csv</code>, or click <b>Load example from dataset</b>.</li>
+              <li>Click <b>Run analysis</b>. This sends your readings to the server, which runs the actual <code class="mono">feature_engineering.py</code> pipeline and the trained Random Forest + K-means models — nothing is computed in the browser.</li>
+              <li>Nothing is saved — this is a one-off "what if" check, not meter registration.</li>
+            </ol>
+          </div>
+
+          <div class="panel">
+            <div class="panel-head">
+              <div><div class="panel-title">Meter details</div></div>
+            </div>
+            <div class="field">
+              <label for="analyzeMeterId">CONS_NO</label>
+              <input id="analyzeMeterId" placeholder="e.g. AD593EF7A755AAA7B8">
+            </div>
+            <div class="footnote" style="margin-top:8px;">SGCC stores this id and one kWh total per day. Name, category, and hourly night/day usage are not in the file.</div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-head">
+              <div><div class="panel-title">Consumption readings</div>
+              <div class="panel-note">Two columns: <code class="mono">timestamp, consumption_kwh</code>. One day per line. A header row is optional.</div></div>
+            </div>
+
+            <div class="hash-block" style="color:var(--text-dim);margin-bottom:12px;">timestamp,consumption_kwh
+2014-01-01,4.20
+2014-01-02,3.80
+2014-01-03,4.10
+2014-01-04,5.60
+...</div>
+
+            <div class="field">
+              <label for="analyzeCsvInput">Paste readings here</label>
+              <textarea id="analyzeCsvInput" style="min-height:160px;font-family:var(--mono);font-size:12px;" placeholder="timestamp,consumption_kwh
+2014-01-01,4.20
+2014-01-02,3.80
+..."></textarea>
+            </div>
+
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+              <label class="btn ghost" style="cursor:pointer;margin:0;">
+                Upload CSV file
+                <input type="file" accept=".csv,text/csv" id="analyzeFileInput" style="display:none;">
+              </label>
+              <span class="pill-btn" id="loadExampleBtn">Load example from dataset</span>
+              <span class="pill-btn" id="downloadTemplateBtn">Download CSV template</span>
+            </div>
+
+            <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-top:14px;">
+              <button class="btn" id="runAnalyzeBtn" type="button">Run analysis</button>
+              <button class="btn ghost" id="resetAnalyzeBtn" type="button">Reset</button>
+              <span id="analyzeSpinner" style="display:none;width:14px;height:14px;border:2px solid var(--border);border-top-color:var(--amber);border-radius:50%;animation:spin .7s linear infinite;"></span>
+            </div>
+            <div id="analyzeParseStatus" style="margin-top:10px;font-size:12.5px;"></div>
+          </div>
+
+          <div class="panel">
+            <div class="panel-title">How is this score calculated?</div>
+            <div class="hash-block" style="color:var(--text);font-size:12.5px;margin-top:10px;" id="formulaLine">
+              Risk score = 0.55 × RF probability + 0.45 × K-means anomaly score
+            </div>
+            <div style="margin-top:10px;font-size:12.5px;color:var(--text-dim);line-height:1.8;" id="thresholdLines">
+              <div>risk score ≥ <b class="mono">0.72</b> → <span class="chip red">HIGH</span></div>
+              <div>risk score ≥ <b class="mono">0.42</b> → <span class="chip amber">MEDIUM</span></div>
+              <div>otherwise → <span class="chip green">LOW</span></div>
+            </div>
+            <div class="footnote" style="margin-top:10px;">These weights and thresholds are read live from the server's <code class="mono">risk_score.py</code> — this panel is not a separate copy of the logic.</div>
+          </div>
+
+          <div class="panel" id="analyzeResultPanel" style="display:none;">
+            <div class="panel-head"><div class="panel-title">Analysis result</div><div class="panel-note" id="analyzeResultNote"></div></div>
+
+            <div class="gauge-wrap">
+              <div style="font-family:var(--mono);font-size:34px;font-weight:600;" id="analyzeScoreValue">—</div>
+              <div style="font-size:11px;color:var(--text-faint);">combined risk score / 100 — <span id="analyzeTierLabel">—</span></div>
+            </div>
+
+            <div class="hash-block" style="color:var(--text);margin:4px 0 2px;" id="formulaSubstitution"></div>
+
+            <div class="section-tag">visual breakdown</div>
+            <div class="an-grid">
+              <div class="an-card wide">
+                <div class="t">Daily usage</div>
+                <div class="n" id="anUsageNote">Each day's kWh, the 7-day moving average and the overall mean</div>
+                <div class="chart-wrap"><canvas id="anUsage"></canvas></div>
+              </div>
+              <div class="an-card">
+                <div class="t">How the score is built</div>
+                <div class="n">Each model's share of the blended score, against the medium and high cut-offs</div>
+                <div class="chart-wrap"><canvas id="anScore"></canvas></div>
+              </div>
+              <div class="an-card">
+                <div class="t">Usage by day of week</div>
+                <div class="n">Average kWh per weekday; weekends in amber</div>
+                <div class="chart-wrap"><canvas id="anWeekday"></canvas></div>
+              </div>
+              <div class="an-card wide">
+                <div class="t">This meter against the dataset average</div>
+                <div class="n">1× is the dataset average. Bars right of the line are above it (capped at 5×).</div>
+                <div class="chart-wrap" style="height:250px;"><canvas id="anFeatures"></canvas></div>
+              </div>
+            </div>
+
+            <div class="section-tag">model outputs</div>
+            <div class="feat-row"><span>Random Forest — abnormal probability</span><b class="mono" id="analyzeRfValue">—</b></div>
+            <div class="feat-row"><span>K-means — anomaly score</span><b class="mono" id="analyzeKmValue">—</b></div>
+
+            <div class="section-tag">top 3 contributing factors</div>
+            <div id="analyzeTop3"></div>
+
+            <div class="section-tag">behavioural features from these daily readings</div>
+            <div id="analyzeFeatureValues"></div>
+
+            <div id="analyzeWarnings"></div>
+
+            <div style="background:var(--amber-dim);border:1px solid rgba(240,169,62,.25);border-radius:9px;padding:10px 12px;margin-top:14px;font-size:12px;color:var(--amber);">
+              ⚠ This is a risk indicator for prioritising human investigation — it is <b>not proof of electricity theft</b>. It is not saved to the dataset.
+            </div>
+          </div>
+        </div>
+      </section>
+
+    </div>
+  </div>
+</div>
+
+<!-- Drawer for consumer detail -->
+<div class="drawer-backdrop" id="drawerBackdrop"></div>
+<div class="drawer" id="drawer">
+  <button class="drawer-close" id="drawerClose" aria-label="Close">✕</button>
+  <div id="drawerContent"></div>
+</div>
+
+<!-- Modal for adding a new consumer -->
+<div class="modal-backdrop" id="addConsumerBackdrop">
+  <div class="modal">
+    <button class="modal-close" id="addConsumerClose" aria-label="Close">✕</button>
+    <h3>Register a meter</h3>
+    <div class="modal-sub" id="addConsumerSub">Scores a new CONS_NO from the eight SGCC features below and writes that row to the feature file.</div>
+    <form id="addConsumerForm">
+      <div class="field"><label for="acMeter">CONS_NO</label><input id="acMeter" placeholder="e.g. AD593EF7A755AAA7B8 — blank generates one"></div>
+      <div class="field-row">
+        <div class="field"><label for="acAvg">Average daily kWh</label><input id="acAvg" type="number" step="0.001" value="8.774" required></div>
+        <div class="field"><label for="acMax">Peak daily kWh</label><input id="acMax" type="number" step="0.001" value="34.854" required></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label for="acMin">Minimum daily kWh</label><input id="acMin" type="number" step="0.001" value="1.015" required></div>
+        <div class="field"><label for="acVar">Consumption variance</label><input id="acVar" type="number" step="0.0001" value="105.4871" required></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label for="acWeekend">Weekend vs weekday ratio</label><input id="acWeekend" type="number" step="0.0001" value="1.2169" required></div>
+        <div class="field"><label for="acSudden">Sudden change score</label><input id="acSudden" type="number" step="0.0001" value="3.3493" required></div>
+      </div>
+      <div class="field-row">
+        <div class="field"><label for="acTrend">Long-term trend slope</label><input id="acTrend" type="number" step="0.0001" value="0.0028" required></div>
+        <div class="field"><label for="acDev">Deviation from own history</label><input id="acDev" type="number" step="0.0001" value="605.5185" required></div>
+      </div>
+      <div class="footnote">These eight numbers are what the SGCC model was trained on. Defaults are the dataset averages. There is no name, category, or night/day split.</div>
+      <div class="form-actions">
+        <button type="submit" class="btn">Add meter</button>
+        <button type="button" class="btn ghost" id="addConsumerCancel">Cancel</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="toast" id="toast"><span class="dotv"></span><span id="toastMsg"></span></div>
+
+<script>
+/* ================= API connection ================= */
+const API_KEY = 'vidyut_api_base';
+let API_BASE = localStorage.getItem(API_KEY) || 'http://127.0.0.1:8000';
+let LIVE = false;
+
+async function apiGet(path, timeoutMs){
+  const ctrl = new AbortController();
+  const t = setTimeout(()=>ctrl.abort(), timeoutMs || 4000);
+  try {
+    const res = await fetch(API_BASE+path, {signal: ctrl.signal});
+    clearTimeout(t);
+    if (!res.ok) throw new Error('HTTP '+res.status);
+    return await res.json();
+  } catch(e){ clearTimeout(t); throw e; }
+}
+async function apiPost(path, body, timeoutMs){
+  const ctrl = new AbortController();
+  const t = setTimeout(()=>ctrl.abort(), timeoutMs || 4000);
+  try {
+    const res = await fetch(API_BASE+path, {
+      method:'POST', signal: ctrl.signal,
+      headers:{'Content-Type':'application/json'}, body: JSON.stringify(body)
+    });
+    clearTimeout(t);
+    const data = await res.json().catch(()=>({}));
+    if (!res.ok) throw new Error(data.detail || ('HTTP '+res.status));
+    return data;
+  } catch(e){ clearTimeout(t); throw e; }
+}
+
+function setConnStatus(live){
+  LIVE = live;
+  const pill = document.getElementById('connStatus');
+  const dot = document.getElementById('syncDot');
+  const txt = document.getElementById('syncText');
+  if (live){
+    pill.textContent = '● Live API'; pill.className = 'chip green';
+    dot.style.background = 'var(--green)';
+    txt.textContent = 'Connected: '+API_BASE+' · SGCC list';
+    document.getElementById('resetDemoBtn').textContent = 'refresh from API';
+    const src = document.getElementById('consumerSourceNote');
+    if (src) src.textContent = 'SGCC CONS_NO list. One id per meter. This file has no customer names or categories.';
+  } else {
+    pill.textContent = '● Demo data'; pill.className = 'chip amber';
+    dot.style.background = 'var(--amber)';
+    txt.textContent = 'Demo mode — backend not reachable';
+    document.getElementById('resetDemoBtn').textContent = 'reset demo data';
+    const src = document.getElementById('consumerSourceNote');
+    if (src) src.textContent = 'Built-in sample meters. This is not the SGCC list.';
+  }
+}
+document.getElementById('connStatus').addEventListener('click', ()=>{
+  const v = prompt('FastAPI backend address (no trailing slash):', API_BASE);
+  if (v){ localStorage.setItem(API_KEY, v.trim()); location.reload(); }
+});
+
+/* ================= Mock data generation (demo mode fallback) ================= */
+const inspectors = ['Insp. R. Bhosale','Insp. A. Kulkarni','Insp. S. Varma','Insp. D. Fernandes'];
+function seededRand(seed){ let s = seed; return ()=>{ s = (s*9301+49297)%233280; return s/233280; }; }
+function tierOf(score){ return score>0.72?'high':score>0.42?'medium':'low'; }
+function mkConsumer(i){
+  const rnd = seededRand(i*77+13);
+  const rf = Math.round(rnd()*rnd()*100)/100;
+  const km = Math.round((rnd()*0.6+rf*0.4)*100)/100;
+  const score = Math.min(1, Math.round((rf*0.55+km*0.45)*100)/100);
+  let tier = tierOf(score);
+  const statuses = tier==='high' ? ['Alert raised','Under investigation','Field visit scheduled'] : tier==='medium' ? ['Monitoring','Alert raised'] : ['Normal'];
+  const meter = 'MTR-'+(400000+i*7).toString().padStart(6,'0');
+  return {
+    id: meter,
+    name: meter,
+    meter,
+    rf, km, score, tier,
+    status: statuses[i%statuses.length],
+    invCase: null,
+    trendLabels: Array.from({length:12},(_,m)=>'M'+(m+1)),
+    trend: Array.from({length:12},(_,m)=> Math.round((40+rnd()*30 + (tier==='high'&&m>7? -18*rnd():0))*10)/10),
+    features: null // demo mode uses the synthetic formula in openConsumer() instead of real feature rows
+  };
+}
+function fakeHash(seed){
+  const s = BigInt(seed*2654435761 % 4294967296);
+  const hex = (s ^ 0x9e3779b97f4a7c15n).toString(16).padStart(16,'0');
+  return hex+hex.split('').reverse().join('').slice(0,16);
+}
+function generateInitialState(){
+  const consumers = Array.from({length:42},(_,i)=>mkConsumer(i+1)).sort((a,b)=>b.score-a.score);
+  const outcomes = ['Pending','Confirmed after inspection','Not confirmed','Requires further review'];
+  const invCases = consumers.filter(c=>c.tier!=='low').slice(0,18).map((c,i)=>{
+    const outcome = outcomes[i%outcomes.length];
+    c.invCase = 'INV-'+(2200+i);
+    c.status = outcome==='Pending' ? 'Under investigation' : outcome;
+    return {
+      case:c.invCase, consumerId:c.id, inspector: inspectors[i%inspectors.length],
+      opened: `2026-0${(i%6)+3}-${(i%27+1).toString().padStart(2,'0')}`,
+      outcome, notes: outcome==='Pending' ? '' : 'Field visit completed; meter and seal inspected.'
+    };
+  });
+  // Demo chain: each block records the hash of the block before it. Block 4 is
+  // marked as altered after the fact, so its recomputed hash no longer matches
+  // what block 5 recorded — the same break a real tampering would cause.
+  const chainRecords = [];
+  const chainBase = Date.parse('2026-10-21T09:30:00Z');
+  invCases.slice(0,8).forEach((ic,i)=>{
+    const cons = consumers.find(c=>c.id===ic.consumerId) || {};
+    const original = fakeHash64(1000+i);
+    chainRecords.push({
+      block: i+1, case: ic.case, consumerName: cons.meter || '—',
+      hash: fakeHash64(i+1), outcome: ic.outcome, risk: cons.score != null ? cons.score : null,
+      blockHash: i===3 ? fakeHash64(5000) : original, _orig: original,
+      previousHash: i===0 ? DEMO_GENESIS : chainRecords[i-1]._orig,
+      createdAt: chainBase + i*11*3600*1000 + i*977*1000,
+      mock:true, tampered:(i===3), opened: ic.opened, payload:null
+    });
+  });
+  return { consumers, invCases, chainRecords, nextInvSeq: invCases.length, nextBlockSeq: 0 };
+}
+
+/* ================= Persistence (demo mode only — live mode's source of truth is the backend) ================= */
+const STORAGE_KEY = 'vidyut_audit_state_v2';
+let consumers = [], invCases = [], chainRecords = [];
+let nextInvSeq = 0, nextBlockSeq = 0;
+let currentRiskFilter = 'all';
+
+function saveState(){
+  if (LIVE) return; // backend files are the persistence layer in live mode
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ consumers, invCases, chainRecords, nextInvSeq, nextBlockSeq }));
+  } catch (e) { /* storage unavailable — state just won't persist across reloads */ }
+}
+
+function loadDemoState(){
+  let state, isFirstRun;
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    isFirstRun = !raw;
+    state = raw ? JSON.parse(raw) : generateInitialState();
+  } catch (e) {
+    isFirstRun = true;
+    state = generateInitialState();
+  }
+  consumers = state.consumers; invCases = state.invCases; chainRecords = state.chainRecords;
+  nextInvSeq = state.nextInvSeq || invCases.length;
+  nextBlockSeq = state.nextBlockSeq || 0;
+  if (isFirstRun) saveState();
+}
+
+function findConsumer(id){ return consumers.find(c=>c.id===id); }
+function findCase(caseId){ return invCases.find(ic=> ic.case===caseId || ic.investigation_id===caseId); }
+
+function showToast(msg){
+  const t = document.getElementById('toast');
+  document.getElementById('toastMsg').textContent = msg;
+  t.classList.add('show');
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(()=>t.classList.remove('show'), 3200);
+}
+
+async function computeSHA256(obj){
+  const enc = new TextEncoder().encode(JSON.stringify(obj));
+  const buf = await crypto.subtle.digest('SHA-256', enc);
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+
+/* ---------------- Sidebar navigation ---------------- */
+const titles = {
+  overview:['Overview','Risk summary across all monitored meters'],
+  consumers:['Consumers','Behavioural risk across all monitored connections'],
+  investigations:['Investigations','Human-reviewed cases — AI score is an aid, not a verdict'],
+  blockchain:['Audit chain','SHA-256 tamper-evident record of investigation events'],
+  model:['Model insights','Random Forest + K-means performance and explainability'],
+  analyze:['Analyze meter','Run the real ML pipeline on raw consumption readings']
+};
+function switchView(v){
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.toggle('active', n.dataset.view===v));
+  document.querySelectorAll('.view').forEach(s=>s.classList.remove('active'));
+  document.getElementById('view-'+v).classList.add('active');
+  document.getElementById('pageTitle').textContent = titles[v][0];
+  document.getElementById('pageSub').textContent = titles[v][1];
+  if (v==='analyze') updateAnalyzeAvailability();
+  if (v==='model') ensureModelInsights();
+}
+async function ensureModelInsights(){
+  if (!LIVE){
+    try {
+      await apiGet('/health');
+      setConnStatus(true);
+      await refreshAllFromAPI();
+      return;
+    } catch(e){ /* stay on the demo chart */ }
+  }
+  renderModelInsights();
+}
+async function updateAnalyzeAvailability(){
+  // Re-verify against the backend right now, the same way boot() does
+  // (apiGet('/health') at API_BASE) — don't just trust a flag that may be
+  // stale from page load (e.g. the backend wasn't up yet at that moment).
+  try {
+    await apiGet('/health');
+    LIVE = true;
+    setConnStatus(true);
+    document.getElementById('analyzeOfflinePanel').style.display = 'none';
+    document.getElementById('analyzeOnlineContent').style.display = 'block';
+    refreshFormulaPanel();
+  } catch(e){
+    document.getElementById('analyzeOfflinePanel').style.display = 'block';
+    document.getElementById('analyzeOnlineContent').style.display = 'none';
+  }
+}
+document.querySelectorAll('.nav-item').forEach(n=>n.addEventListener('click',()=>switchView(n.dataset.view)));
+
+/* ---------------- Drawer ---------------- */
+const drawer = document.getElementById('drawer');
+const backdrop = document.getElementById('drawerBackdrop');
+function closeDrawer(){ drawer.classList.remove('open'); backdrop.classList.remove('open'); }
+document.getElementById('drawerClose').addEventListener('click', closeDrawer);
+backdrop.addEventListener('click', closeDrawer);
+
+function tierColor(t){ return t==='high'?'var(--red)':t==='medium'?'var(--amber)':'var(--green)'; }
+
+const FEATURE_LABELS = {
+  avg_daily_kwh: 'Average daily usage', max_kwh: 'Peak daily usage', min_kwh: 'Minimum daily usage',
+  variance_kwh: 'Consumption variance', night_day_ratio: 'Night-time usage ratio',
+  weekend_weekday_ratio: 'Weekend vs weekday ratio', sudden_change_score: 'Sudden change score',
+  trend_slope: 'Long-term trend slope', deviation_from_history: 'Deviation from own history',
+};
+
+async function openConsumer(c){
+  const ic = c.invCase!=null ? findCase(c.invCase) : null;
+
+  const investigationHtml = !ic ? `
+      <div class="section-tag">investigation action</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:6px;">
+        <button class="btn" onclick="sendToInvestigation('${c.id}')">Send to investigation</button>
+      </div>` : `
+      <div class="section-tag">investigation — ${ic.case}</div>
+      <div class="investigation-box">
+        <div style="font-size:12px;color:var(--text-dim);margin-bottom:10px;">Assigned to ${ic.inspector} · opened ${ic.opened}</div>
+        <div class="field">
+          <label for="outcomeSelect">Outcome</label>
+          <select id="outcomeSelect">
+            <option value="Pending" ${ic.outcome==='Pending'?'selected':''}>Pending review</option>
+            <option value="Confirmed after inspection" ${ic.outcome==='Confirmed after inspection'?'selected':''}>Confirmed after inspection</option>
+            <option value="Not confirmed" ${ic.outcome==='Not confirmed'?'selected':''}>Not confirmed</option>
+            <option value="Requires further review" ${ic.outcome==='Requires further review'?'selected':''}>Requires further review</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="notesInput">Inspector notes</label>
+          <textarea id="notesInput" placeholder="What did the field visit find?">${ic.notes||''}</textarea>
+        </div>
+        <button class="btn" onclick="saveOutcome('${c.id}')">Save outcome</button>
+        <div class="inv-hash-note">Saving hashes this event (case, risk score, outcome, notes, timestamp) with SHA-256 and appends it to the audit chain — see the Audit chain tab.</div>
+      </div>`;
+
+  document.getElementById('drawerContent').innerHTML = `
+    <div style="padding-top:4px;">
+      <div style="font-size:11px;color:var(--text-faint);font-family:var(--mono);">CONS_NO</div>
+      <div class="mono" style="font-size:16px;font-weight:600;margin-top:2px;word-break:break-all;">${c.meter}</div>
+      <div style="font-size:12.5px;color:var(--text-dim);margin-top:2px;">${c.status}</div>
+
+      <div class="gauge-wrap">
+        <div style="font-family:var(--mono);font-size:34px;font-weight:600;color:${tierColor(c.tier)};">${(c.score*100).toFixed(0)}</div>
+        <div style="font-size:11px;color:var(--text-faint);">combined risk score / 100</div>
+      </div>
+
+      <div class="section-tag">model outputs</div>
+      <div class="feat-row"><span>Random Forest — abnormal probability</span><b class="mono">${c.rf.toFixed(2)}</b></div>
+      <div class="feat-row"><span>K-means — anomaly score</span><b class="mono">${c.km.toFixed(2)}</b></div>
+
+      <div class="section-tag" id="whySectionTag">why this score — loading…</div>
+      <div id="whyFeatures"><div class="feat-row"><span>Loading feature breakdown…</span></div></div>
+
+      <div class="section-tag" id="trendSectionTag">consumption trend</div>
+      <div class="chart-wrap sm"><canvas id="drawerChart"></canvas></div>
+
+      ${investigationHtml}
+      <div class="footnote">This score flags behaviour for human review. It does not, by itself, establish that electricity theft has occurred.</div>
+    </div>
+  `;
+  drawer.classList.add('open'); backdrop.classList.add('open');
+
+  // Trend chart — real per-meter daily totals when live, synthetic otherwise
+  let trendLabels = c.trendLabels, trendValues = c.trend;
+  if (LIVE){
+    document.getElementById('trendSectionTag').textContent = 'recent daily consumption (from raw readings)';
+    try {
+      const ts = await apiGet(`/meters/${encodeURIComponent(c.meter)}/timeseries?days=30`);
+      trendLabels = ts.daily.map(d=>d.date.slice(5));
+      trendValues = ts.daily.map(d=>d.total_kwh);
+    } catch(e){
+      document.getElementById('trendSectionTag').textContent = 'consumption trend (no raw-reading history for this meter)';
+      trendLabels = []; trendValues = [];
+    }
+  } else {
+    document.getElementById('trendSectionTag').textContent = 'simulated 12-month consumption trend (demo data)';
+  }
+  requestAnimationFrame(()=>{
+    new Chart(document.getElementById('drawerChart'), {
+      type:'line',
+      data:{ labels:trendLabels,
+        datasets:[{data:trendValues, borderColor:tierColor(c.tier), backgroundColor:'transparent', tension:.35, pointRadius:0, borderWidth:2}]},
+      options:{responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:false}},
+        scales:{x:{grid:{display:false},ticks:{color:'#5B6478',font:{size:10}}}, y:{grid:{color:'#1c2333'},ticks:{color:'#5B6478',font:{size:10}}}}}
+    });
+  });
+
+  // Why-this-score breakdown — real feature values + global importance when live
+  const whyTag = document.getElementById('whySectionTag');
+  const whyBox = document.getElementById('whyFeatures');
+  if (LIVE){
+    try {
+      const explain = await apiGet(`/meters/${encodeURIComponent(c.meter)}/explain`);
+      whyTag.textContent = 'why this score — this meter vs. dataset average';
+      if (explain.features && explain.features.length){
+        whyBox.innerHTML = explain.features.map(f=>{
+          const label = FEATURE_LABELS[f.feature] || f.feature;
+          const pct = f.importance!=null ? Math.round(f.importance*100) : null;
+          const cmp = f.dataset_average!=null
+            ? ` <span style="color:${f.above_average?'var(--amber)':'var(--text-faint)'}">(avg ${f.dataset_average})</span>` : '';
+          return `<div class="feat-row"><span>${label}${cmp}</span>` +
+            (pct!=null ? `<div class="feat-bar-bg"><div class="feat-bar-fill" style="width:${Math.min(100,pct*4)}%"></div></div>` : `<b class="mono">${f.value}</b>`) +
+            `</div>`;
+        }).join('') + `<div class="footnote" style="margin-top:8px;">Bars show global Random Forest feature importance; values in parentheses are the dataset average for comparison. This is an approximate explanation, not a per-case SHAP value.</div>`;
+      } else {
+        whyBox.innerHTML = `<div class="feat-row"><span>No feature breakdown available for this meter.</span></div>`;
+      }
+    } catch(e){
+      whyTag.textContent = 'why this score — unavailable';
+      whyBox.innerHTML = `<div class="feat-row"><span>Could not reach the explain endpoint.</span></div>`;
+    }
+  } else {
+    whyTag.textContent = 'top contributing features (demo — illustrative only)';
+    const feats = [
+      ['Night-time usage ratio', 0.3+c.score*0.6],
+      ['Sudden drop after billing', 0.2+c.score*0.5],
+      ['Deviation from cluster mean', 0.25+c.score*0.55],
+      ['Consumption variance', 0.35+c.score*0.4],
+      ['Weekend vs weekday delta', 0.2+c.score*0.3],
+    ];
+    whyBox.innerHTML = feats.map(f=>`<div class="feat-row"><span>${f[0]}</span><div class="feat-bar-bg"><div class="feat-bar-fill" style="width:${Math.min(100,f[1]*100)}%"></div></div></div>`).join('');
+  }
+}
+
+/* ---------------- Investigator actions ---------------- */
+window.sendToInvestigation = async function(consumerId){
+  const c = findConsumer(consumerId);
+  if (!c || c.invCase) return;
+
+  if (LIVE){
+    const inspector = inspectors[Math.floor(Math.random()*inspectors.length)];
+    try {
+      const res = await apiPost('/investigations/open', { meter_id: c.meter, inspector });
+      showToast('Sent to investigation — INV-'+res.investigation.investigation_id+' assigned to '+inspector);
+      await refreshAllFromAPI();
+      const updated = findConsumer(consumerId);
+      if (updated) openConsumer(updated);
+    } catch(e){ showToast('Could not open investigation: '+e.message); }
+    return;
+  }
+
+  nextInvSeq++;
+  const newCase = {
+    case: 'INV-'+(2200+nextInvSeq),
+    consumerId: c.id,
+    inspector: inspectors[Math.floor(Math.random()*inspectors.length)],
+    opened: new Date().toISOString().slice(0,10),
+    outcome: 'Pending',
+    notes: ''
+  };
+  invCases.unshift(newCase);
+  c.invCase = newCase.case;
+  c.status = 'Under investigation';
+  saveState();
+  renderConsumers(currentRiskFilter);
+  renderAlerts();
+  renderInvestigations();
+  openConsumer(c);
+  showToast('Sent to investigation — '+newCase.case+' assigned to '+newCase.inspector);
+};
+
+window.saveOutcome = async function(consumerId){
+  const c = findConsumer(consumerId);
+  const ic = c && findCase(c.invCase);
+  if (!ic) return;
+  const outcome = document.getElementById('outcomeSelect').value;
+  const notes = document.getElementById('notesInput').value.trim();
+
+  if (LIVE){
+    const OUTCOME_CODE = {
+      'Pending':'pending', 'Confirmed after inspection':'confirmed',
+      'Not confirmed':'not_confirmed', 'Requires further review':'requires_further_review'
+    };
+    try {
+      const res = await apiPost('/investigations/outcome', {
+        investigation_id: ic.investigation_id, outcome: OUTCOME_CODE[outcome] || 'pending', notes
+      });
+      showToast('Outcome saved and anchored on the audit chain — '+res.anchor.chain_tx_ref);
+      await refreshAllFromAPI();
+      const updated = findConsumer(consumerId);
+      if (updated) openConsumer(updated);
+    } catch(e){ showToast('Could not save outcome: '+e.message); }
+    return;
+  }
+
+  ic.outcome = outcome;
+  ic.notes = notes;
+  ic.closedAt = outcome==='Pending' ? null : new Date().toISOString().slice(0,10);
+  c.status = outcome==='Pending' ? 'Under investigation' : outcome;
+
+  const payload = {
+    case: ic.case, consumer_id: c.id, meter: c.meter, risk_score: c.score,
+    model_version: 'rf-v2.3', outcome, notes, timestamp: new Date().toISOString()
+  };
+  const hash = await computeSHA256(payload);
+  nextBlockSeq++;
+  const lastRec = chainRecords.slice().sort((a,b)=>chainIndex(a)-chainIndex(b)).pop();
+  const nextIndex = lastRec ? chainIndex(lastRec)+1 : 1;
+  const createdAt = Date.now();
+  const previousHash = lastRec ? lastRec.blockHash : DEMO_GENESIS;
+  const blockHash = await computeSHA256({index:nextIndex, hash, previousHash, createdAt});
+  chainRecords.unshift({
+    block: nextIndex, case: ic.case, consumerName: c.meter,
+    hash, outcome, risk: c.score, blockHash, previousHash, createdAt,
+    mock:false, tampered:false, opened: ic.opened, payload
+  });
+
+  saveState();
+  renderConsumers(currentRiskFilter);
+  renderAlerts();
+  renderInvestigations();
+  renderChain();
+  openConsumer(c);
+  showToast('Outcome saved and anchored on the audit chain — block #'+nextIndex);
+};
+
+window.verifyChainEntry = async function(hash){
+  const rec = chainRecords.find(r=>r.hash===hash);
+  if (!rec || !rec.payload) return;
+  const recomputed = await computeSHA256(rec.payload);
+  showToast(recomputed===hash
+    ? '✓ Hash recomputed from the current record — matches the anchored value'
+    : '✕ Hash mismatch — this record was altered after anchoring');
+};
+
+window.verifyLiveRecord = async function(investigationId){
+  try {
+    const res = await apiGet(`/audit/${investigationId}/verify`);
+    showToast(res.verified
+      ? '✓ Server recomputed the hash — matches the anchored value ('+res.chain_tx_ref+')'
+      : '✕ Hash mismatch — this record was altered after anchoring');
+  } catch(e){ showToast('Could not verify: '+e.message); }
+};
+
+/* ---------------- Add consumer ---------------- */
+const addBackdrop = document.getElementById('addConsumerBackdrop');
+document.getElementById('openAddConsumer').addEventListener('click', ()=>{
+  document.getElementById('acMeter').value = '';
+  document.getElementById('addConsumerSub').textContent = LIVE
+    ? 'Sends these eight features through the trained models and appends the row to data/features.csv and data/detections.csv.'
+    : 'Demo mode: risk score is approximated in the browser (backend not connected).';
+  addBackdrop.classList.add('open');
+});
+function closeAddModal(){ addBackdrop.classList.remove('open'); }
+document.getElementById('addConsumerClose').addEventListener('click', closeAddModal);
+document.getElementById('addConsumerCancel').addEventListener('click', closeAddModal);
+addBackdrop.addEventListener('click', e=>{ if (e.target===addBackdrop) closeAddModal(); });
+
+document.getElementById('addConsumerForm').addEventListener('submit', async e=>{
+  e.preventDefault();
+  let meter = document.getElementById('acMeter').value.trim();
+  const num = (id) => parseFloat(document.getElementById(id).value);
+  const features = {
+    avg_daily_kwh: num('acAvg'),
+    max_kwh: num('acMax'),
+    min_kwh: num('acMin'),
+    variance_kwh: num('acVar'),
+    weekend_weekday_ratio: num('acWeekend'),
+    sudden_change_score: num('acSudden'),
+    trend_slope: num('acTrend'),
+    deviation_from_history: num('acDev'),
+  };
+  if (Object.values(features).some(v => Number.isNaN(v))) return;
+
+  if (LIVE){
+    try {
+      const res = await apiPost('/consumers/register', { meter_id: meter || null, ...features });
+      await refreshAllFromAPI();
+      closeAddModal(); e.target.reset();
+      showToast(`Added ${res.meter_id} — risk score ${(res.risk_score*100).toFixed(0)} (${res.risk_tier})`);
+    } catch(e2){ showToast('Could not register meter: '+e2.message); }
+    return;
+  }
+
+  meter = meter || ('MTR-'+Math.floor(400000+Math.random()*90000));
+  const spread = Math.min(1, features.variance_kwh / 200);
+  const jump = Math.min(1, features.sudden_change_score / 6);
+  const rf = Math.min(1, Math.round((0.15 + jump*0.5 + spread*0.25 + Math.random()*0.08)*100)/100);
+  const km = Math.min(1, Math.round((0.1 + jump*0.4 + spread*0.3 + Math.random()*0.1)*100)/100);
+  const score = Math.min(1, Math.round((rf*0.55 + km*0.45)*100)/100);
+  const tier = tierOf(score);
+  const statuses = tier==='high' ? ['Alert raised'] : tier==='medium' ? ['Monitoring'] : ['Normal'];
+
+  const newConsumer = {
+    id: meter, name: meter, meter, rf, km, score, tier,
+    status: statuses[0], invCase: null,
+    trendLabels: Array.from({length:12},(_,m)=>'M'+(m+1)),
+    trend: Array.from({length:12},()=> Math.round((features.avg_daily_kwh*30 + (Math.random()-0.5)*features.avg_daily_kwh*8)*10)/10)
+  };
+  consumers.push(newConsumer);
+  consumers.sort((a,b)=>b.score-a.score);
+  saveState();
+
+  renderConsumers(currentRiskFilter);
+  renderAlerts();
+  updateRiskChart();
+  renderStats();
+  closeAddModal();
+  e.target.reset();
+  showToast(`Added ${meter} — risk score ${(score*100).toFixed(0)} (${tier})`);
+});
+
+/* ---------------- Overview: stats + charts + alerts ---------------- */
+const alertRowsEl = document.getElementById('alertRows');
+function renderAlerts(){
+  alertRowsEl.innerHTML = '';
+  const highRisk = consumers.filter(c=>c.tier==='high').slice(0,6);
+  if (!highRisk.length){
+    alertRowsEl.innerHTML = '<div class="footnote">No high-risk meters right now.</div>';
+    return;
+  }
+  highRisk.forEach(c=>{
+    const div = document.createElement('div');
+    div.className='arow';
+    div.innerHTML = `<span class="dot high"></span>
+      <div class="arow-main"><div class="arow-name mono">${c.meter}</div><div class="arow-meta">${c.status}</div></div>
+      <div class="arow-score" style="color:${tierColor(c.tier)}">${(c.score*100).toFixed(0)}</div>`;
+    div.addEventListener('click',()=>openConsumer(c));
+    alertRowsEl.appendChild(div);
+  });
+}
+
+function renderStats(){
+  const riskCounts = tierCounts();
+  const openInv = invCases.filter(ic=>ic.outcome==='Pending').length;
+  const totalMeters = (LIVE && analytics && !analytics.demo) ? analytics.total : consumers.length;
+
+  document.getElementById('statTotalMeters').textContent = fmtN(totalMeters);
+  document.getElementById('statTotalDelta').textContent = LIVE ? 'from data/detections.csv' : 'demo dataset';
+  document.getElementById('statHighRisk').textContent = fmtN(riskCounts.high);
+  document.getElementById('statHighDelta').textContent = fmtN(riskCounts.medium)+' medium, '+fmtN(riskCounts.low)+' low';
+  document.getElementById('statOpenInv').textContent = openInv;
+  document.getElementById('statOpenDelta').textContent = invCases.length+' total cases';
+
+  if (LIVE){
+    apiGet('/stats').then(s=>{
+      document.getElementById('statChainIntegrity').textContent = s.chain_intact ? '100%' : '⚠ broken';
+      document.getElementById('statChainChip').textContent = s.chain_intact ? 'VERIFIED' : 'BROKEN';
+      document.getElementById('statChainChip').className = 'chip '+(s.chain_intact?'green':'red');
+      document.getElementById('statChainDelta').textContent = s.chain_length+' records anchored';
+    }).catch(()=>{});
+  } else {
+    const intact = chainRecords.every(r=>!r.tampered) ? false : false; // demo deliberately includes one tampered row
+    document.getElementById('statChainIntegrity').textContent = '⚠ demo';
+    document.getElementById('statChainChip').textContent = 'DEMO';
+    document.getElementById('statChainChip').className = 'chip amber';
+    document.getElementById('statChainDelta').textContent = chainRecords.length+' demo records (1 deliberately tampered)';
+  }
+  renderOverviewCharts();
+  renderConsumerCharts();
+}
+
+const chartTextColor = '#8A93A6', gridColor = '#1c2333';
+let loadChart;
+async function renderLoadChart(){
+  const titleEl = document.getElementById('loadChartTitle');
+  const noteEl = document.getElementById('loadChartNote');
+  let labels, values, label;
+
+  if (LIVE){
+    try {
+      const res = await apiGet('/grid/daily-load?days=30');
+      labels = res.daily.map(d=>d.date.slice(5));
+      values = res.daily.map(d=>d.total_kwh);
+      label = 'Total kWh across all meters';
+      titleEl.textContent = 'Grid consumption trend (real)';
+      noteEl.textContent = 'Aggregated from data/raw_readings.csv, last 30 days';
+    } catch(e){
+      titleEl.textContent = 'Grid consumption trend';
+      noteEl.textContent = 'No raw_readings.csv on the server — run generate_sample_data.py or supply your dataset';
+      labels = []; values = [];
+    }
+  } else {
+    // Aggregate the demo consumers' own synthetic trends so this chart is at
+    // least internally consistent with the rest of the mock dataset.
+    titleEl.textContent = 'Grid consumption trend (demo)';
+    noteEl.textContent = 'Simulated — sum of all demo consumers\' trends, not real meter data';
+    labels = Array.from({length:12},(_,i)=>'M'+(i+1));
+    values = labels.map((_,i)=> Math.round(consumers.reduce((sum,c)=> sum+(c.trend[i]||0), 0)));
+    label = 'Simulated aggregate (kWh)';
+  }
+
+  const data = { labels, datasets:[{label, data:values, borderColor:'#F0A93E', backgroundColor:'rgba(240,169,62,.08)', fill:true, tension:.35, pointRadius:0, borderWidth:2}] };
+  if (loadChart){ loadChart.data = data; loadChart.update(); return; }
+  loadChart = new Chart(document.getElementById('loadChart'), {
+    type:'line', data,
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{labels:{color:chartTextColor,font:{size:11},boxWidth:12}}},
+      scales:{x:{grid:{display:false},ticks:{color:chartTextColor,font:{size:10}}}, y:{grid:{color:gridColor},ticks:{color:chartTextColor,font:{size:10}}}}}
+  });
+}
+
+let riskDistChart;
+function updateRiskChart(){
+  const riskCounts = tierCounts();
+  if (!riskDistChart){
+    riskDistChart = new Chart(document.getElementById('riskDist'), {
+      type:'bar',
+      data:{ labels:['Low','Medium','High'],
+        datasets:[{data:[riskCounts.low,riskCounts.medium,riskCounts.high], backgroundColor:['#3FBF8F','#F0A93E','#E5484D'], borderRadius:6, barThickness:38}]},
+      options:{responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:false}},
+        scales:{x:{grid:{display:false},ticks:{color:chartTextColor,font:{size:11}}}, y:{grid:{color:gridColor},ticks:{color:chartTextColor,font:{size:10}}}}}
+    });
+  } else {
+    riskDistChart.data.datasets[0].data = [riskCounts.low, riskCounts.medium, riskCounts.high];
+    riskDistChart.update();
+  }
+}
+
+/* ---------------- Consumers table ---------------- */
+const tbody = document.getElementById('consumerTbody');
+function consumerRowHtml(c){
+  return `<td class="mono">${c.meter}</td>
+    <td><span class="risk-bar"><span class="risk-fill" style="width:${c.score*100}%;background:${tierColor(c.tier)}"></span></span><span class="mono">${(c.score*100).toFixed(0)}</span></td>
+    <td class="mono">${c.rf.toFixed(2)}</td>
+    <td class="mono">${c.km.toFixed(2)}</td>
+    <td><span class="chip ${c.tier==='high'?'red':c.tier==='medium'?'amber':'green'}">${c.status}</span></td>`;
+}
+function renderConsumers(filter){
+  currentRiskFilter = filter;
+  tbody.innerHTML='';
+  const filtered = consumers.filter(c=> filter==='all' || c.tier===filter);
+  if (!filtered.length){
+    tbody.innerHTML = '<tr><td colspan="5" style="color:var(--text-faint);">No meters match this filter.</td></tr>';
+    return;
+  }
+  filtered.forEach(c=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = consumerRowHtml(c);
+    tr.addEventListener('click',()=>openConsumer(c));
+    tbody.appendChild(tr);
+  });
+}
+document.querySelectorAll('[data-risk]').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('[data-risk]').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    renderConsumers(btn.dataset.risk);
+  });
+});
+document.getElementById('searchInput').addEventListener('input', e=>{
+  const q = e.target.value.toLowerCase();
+  switchView('consumers');
+  tbody.innerHTML='';
+  consumers.filter(c=> c.meter.toLowerCase().includes(q) || c.id.toLowerCase().includes(q)).forEach(c=>{
+    const tr = document.createElement('tr');
+    tr.innerHTML = consumerRowHtml(c);
+    tr.addEventListener('click',()=>openConsumer(c));
+    tbody.appendChild(tr);
+  });
+});
+
+/* ---------------- Investigations ---------------- */
+const invTbody = document.getElementById('invTbody');
+function renderInvestigations(){
+  renderOutcomeCharts();
+  invTbody.innerHTML = '';
+  document.getElementById('invCount').textContent = invCases.length+' cases · human-reviewed, AI score used only as prioritisation aid';
+  if (!invCases.length){
+    invTbody.innerHTML = '<tr><td colspan="6" style="color:var(--text-faint);">No investigations opened yet.</td></tr>';
+    return;
+  }
+  invCases.forEach(ic=>{
+    const c = findConsumer(ic.consumerId);
+    const score = ic.riskScore != null ? ic.riskScore : (c ? c.score : null);
+    const tier = c ? c.tier : (score != null ? tierOfScore(score) : 'low');
+    const tr = document.createElement('tr');
+    const oColor = ic.outcome.includes('Confirmed')?'red':ic.outcome.includes('Not')?'green':ic.outcome==='Pending'?'blue':'amber';
+    tr.innerHTML = `<td class="mono">${ic.case}</td><td class="mono">${c ? c.meter : ic.consumerId}</td><td>${ic.inspector}</td><td class="mono">${ic.opened}</td>
+      <td class="mono" style="color:${tierColor(tier)}">${score != null ? (score*100).toFixed(0) : '—'}</td>
+      <td><span class="chip ${oColor}">${ic.outcome}</span></td>`;
+    if (c) tr.addEventListener('click',()=>openConsumer(c));
+    invTbody.appendChild(tr);
+  });
+}
+
+/* ---------------- Reset / refresh ---------------- */
+document.getElementById('resetDemoBtn').addEventListener('click', ()=>{
+  if (LIVE){ refreshAllFromAPI(); showToast('Refreshed from API'); return; }
+  try { localStorage.removeItem(STORAGE_KEY); } catch(e){}
+  location.reload();
+});
+
+/* ---------------- Model insights ---------------- */
+let featChart, clusterChart;
+async function renderModelInsights(){
+  modelInsights = null;
+  const featNote = document.getElementById('featChartNote');
+  const clusterNote = document.getElementById('clusterChartNote');
+  let featLabels, featValues;
+
+  if (LIVE){
+    try {
+      const insights = await apiGet('/model/insights');
+      modelInsights = insights;
+      if (insights.formula){ THRESH.high = insights.formula.high_threshold; THRESH.medium = insights.formula.medium_threshold; }
+      if (insights.random_forest && insights.random_forest.feature_importance){
+        const entries = Object.entries(insights.random_forest.feature_importance)
+          .sort((a,b)=>b[1]-a[1]).slice(0,7);
+        featLabels = entries.map(e=>FEATURE_LABELS[e[0]]||e[0]);
+        featValues = entries.map(e=>e[1]);
+        const f1 = insights.random_forest.f1_score;
+        const auc = insights.random_forest.roc_auc;
+        const n = insights.kmeans && insights.kmeans.n_consumers;
+        // SGCC is the wide daily file: tens of thousands of meters and no hour-of-day feature.
+        const onSgcc = n > 1000 && !insights.random_forest.feature_importance.night_day_ratio;
+        const trainedOn = onSgcc ? `SGCC daily kWh, ${n.toLocaleString()} consumers` : (n ? `Behavioural features, ${n.toLocaleString()} consumers` : 'Behavioural features, supervised');
+        featNote.textContent = `F1 ${Number(f1).toFixed(3)} · ROC-AUC ${Number(auc).toFixed(3)}` + (onSgcc ? ' · SGCC' : '');
+        document.getElementById('rfMetricCell').textContent = (f1*100).toFixed(1)+'% F1';
+        document.getElementById('rfTrainedOn').textContent = trainedOn;
+        document.getElementById('kmTrainedOn').textContent = trainedOn;
+        document.getElementById('modelRegistryBody').rows[0].cells[4].innerHTML = '<span class="chip green">production</span>';
+      } else {
+        featLabels = []; featValues = [];
+        featNote.textContent = insights.note || 'Train with --metrics-out to populate this.';
+      }
+      if (insights.kmeans){
+        document.getElementById('kmMetricCell').textContent = 'k='+insights.kmeans.k+', '+insights.kmeans.silhouette_score.toFixed(3)+' silhouette';
+        document.getElementById('modelRegistryBody').rows[1].cells[4].innerHTML = '<span class="chip green">production</span>';
+        clusterNote.textContent = 'k='+insights.kmeans.k+' clusters (silhouette '+insights.kmeans.silhouette_score.toFixed(3)+')';
+      } else {
+        clusterNote.textContent = 'K-means metrics not available — see README';
+      }
+    } catch(e){
+      featLabels = []; featValues = [];
+      featNote.textContent = 'Could not reach /model/insights';
+      clusterNote.textContent = '';
+    }
+  } else {
+    featLabels = ['Night-time usage ratio','Sudden drop','Cluster deviation','Consumption variance','Weekend/weekday delta','Historical trend'];
+    featValues = [0.24,0.21,0.18,0.15,0.12,0.10];
+    featNote.textContent = 'Demo values — illustrative only. Not SGCC. The API is not connected.';
+    clusterNote.textContent = 'Demo values — illustrative only';
+    document.getElementById('rfMetricCell').textContent = '— (demo)';
+    document.getElementById('kmMetricCell').textContent = '— (demo)';
+    document.getElementById('modelRegistryBody').rows[0].cells[4].innerHTML = '<span class="chip amber">demo</span>';
+    document.getElementById('modelRegistryBody').rows[1].cells[4].innerHTML = '<span class="chip amber">demo</span>';
+  }
+
+  const featData = { labels: featLabels, datasets:[{data:featValues, backgroundColor:'#F0A93E', borderRadius:5}] };
+  if (featChart){ featChart.data = featData; featChart.update(); }
+  else {
+    featChart = new Chart(document.getElementById('featChart'), {
+      type:'bar', data: featData,
+      options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{display:false}},
+        scales:{x:{grid:{color:gridColor},ticks:{color:chartTextColor,font:{size:10}}}, y:{grid:{display:false},ticks:{color:chartTextColor,font:{size:10.5}}}}}
+    });
+  }
+
+  // A stratified sample of every scored meter when the server provides one, so
+  // the plot is not limited to the high-risk page the dashboard lists.
+  const scatterSrc = (analytics && analytics.scatter) ? analytics.scatter : consumers.map(c=>({x:c.rf, y:c.km, tier:c.tier}));
+  const byTier = t => scatterSrc.filter(p=>p.tier===t).map(p=>({x:p.x, y:p.y}));
+  const clusterDatasets = {
+    datasets:[
+      {label:'Low', data:byTier('low'), backgroundColor:'rgba(63,191,143,.7)'},
+      {label:'Medium', data:byTier('medium'), backgroundColor:'rgba(240,169,62,.75)'},
+      {label:'High', data:byTier('high'), backgroundColor:'rgba(229,72,77,.8)'}
+    ]
+  };
+  if (clusterChart){ clusterChart.data = clusterDatasets; clusterChart.update(); }
+  else {
+    clusterChart = new Chart(document.getElementById('clusterChart'), {
+      type:'scatter', data: clusterDatasets,
+      options:{responsive:true,maintainAspectRatio:false,
+        plugins:{legend:{labels:{color:chartTextColor,font:{size:10.5},boxWidth:10}}},
+        scales:{x:{title:{display:true,text:'RF probability',color:chartTextColor,font:{size:10}},grid:{color:gridColor},ticks:{color:chartTextColor,font:{size:9}}},
+                 y:{title:{display:true,text:'K-means anomaly score',color:chartTextColor,font:{size:10}},grid:{color:gridColor},ticks:{color:chartTextColor,font:{size:9}}}}}
+    });
+  }
+  renderModelExtras();
+}
+
+/* ---------------- Live data loading ---------------- */
+function liveDetectionToConsumer(d){
+  const tier = d.risk_tier;
+  return {
+    id: d.meter_id, name: d.meter_id, meter: d.meter_id,
+    rf: d.rf_probability, km: d.kmeans_anomaly_score, score: d.risk_score, tier,
+    status: 'Normal', // overwritten below once investigations are known
+    invCase: null,
+    trendLabels: [], trend: []
+  };
+}
+
+async function refreshAllFromAPI(){
+  const [detections, invs, analyticsRes, chainRes] = await Promise.all([
+    apiGet('/consumers/high-risk?limit=2000'),
+    apiGet('/investigations'),
+    apiGet('/analytics/summary', 20000).catch(()=>null),
+    apiGet('/audit/chain', 10000).catch(()=>null),   // older backends don't have it; the page then falls back to per-case anchors
+  ]);
+  chainData = chainRes;
+
+  consumers = detections.map(d=>liveDetectionToConsumer(d));
+  analytics = analyticsRes || analyticsFromConsumers();
+
+  invCases = invs.map(c=>({
+    case: 'INV-'+c.investigation_id, investigation_id: c.investigation_id,
+    consumerId: c.meter_id, inspector: c.inspector, opened: c.opened_at,
+    outcome: {pending:'Pending', confirmed:'Confirmed after inspection', not_confirmed:'Not confirmed', requires_further_review:'Requires further review'}[c.outcome] || 'Pending',
+    notes: c.notes, closedAt: c.closed_at, riskScore: c.risk_score,
+    hasAnchor: !!c.audit_anchor,
+  }));
+
+  // link each consumer to its most recent case + a human status label
+  invCases.forEach(ic=>{
+    const c = findConsumer(ic.consumerId);
+    if (c){
+      c.invCase = ic.case;
+      c.status = ic.outcome === 'Pending' ? 'Under investigation' : ic.outcome;
+    }
+  });
+  consumers.forEach(c=>{
+    if (!c.invCase) c.status = c.tier==='high' ? 'Alert raised' : c.tier==='medium' ? 'Monitoring' : 'Normal';
+  });
+  consumers.sort((a,b)=>b.score-a.score);
+
+  chainRecords = invs.filter(c=>c.audit_anchor).map(c=>({
+    case: 'INV-'+c.investigation_id, investigationId: c.investigation_id,
+    consumerName: c.meter_id,
+    block: c.audit_anchor.chain_tx_ref, hash: c.audit_anchor.payload_hash,
+    previousHash: c.audit_anchor.previous_hash || '',
+    sepoliaTx: c.audit_anchor.sepolia_tx || '',
+    mock:false, tampered:false, opened: c.opened_at,
+  })).reverse();
+
+  renderConsumers(currentRiskFilter);
+  renderAlerts();
+  renderInvestigations();
+  renderChain();
+  updateRiskChart();
+  renderStats();
+  renderLoadChart();
+  renderModelInsights();
+}
+
+/* ---------------- Analyze Meter ---------------- */
+const FEATURE_DESCRIPTIONS = {
+  avg_daily_kwh: 'Average electricity used per day across the provided readings.',
+  max_kwh: 'Highest single-day consumption in the provided readings.',
+  min_kwh: 'Lowest single-day consumption in the provided readings.',
+  variance_kwh: 'How much day-to-day consumption fluctuates — higher means more erratic usage.',
+  night_day_ratio: 'Share of usage happening at night (10pm–6am) vs. daytime. Unusually high can indicate load shifted to avoid inspection hours.',
+  weekend_weekday_ratio: 'Average weekend usage divided by average weekday usage.',
+  sudden_change_score: 'The largest single-day jump in usage relative to the trailing 7-day average — flags abrupt changes.',
+  trend_slope: 'Slope of a straight-line fit over daily usage. Positive = rising, negative = falling, over the period provided.',
+  deviation_from_history: "How far the last 7 days' usage deviates from the meter's own earlier history, in standard deviations. Needs 14+ days of data to be non-zero.",
+};
+
+const EXAMPLE_CSV_TEMPLATE =
+`timestamp,consumption_kwh
+2014-01-01,4.20
+2014-01-02,3.80
+2014-01-03,4.10
+2014-01-04,5.60
+2014-01-05,6.40
+2014-01-06,6.10
+2014-01-07,4.40
+2014-01-08,4.00
+2014-01-09,3.90
+2014-01-10,4.30
+2014-01-11,4.60
+2014-01-12,7.20
+2014-01-13,6.80
+2014-01-14,4.50`;
+
+function setAnalyzeStatus(msg, type){
+  const el = document.getElementById('analyzeParseStatus');
+  el.textContent = msg;
+  el.style.color = type==='error' ? 'var(--red)' : type==='success' ? 'var(--green)' : 'var(--text-dim)';
+}
+
+function parseReadingsCsv(text){
+  const lines = text.split(/\r?\n/).map(l=>l.trim()).filter(l=>l.length);
+  if (!lines.length) return { readings: [], skipped: 0 };
+  const readings = [];
+  let skipped = 0;
+  for (const line of lines){
+    const parts = line.split(',').map(p=>p.trim());
+    if (parts.length < 2) { skipped++; continue; }
+    // Tolerate an optional leading meter_id column — always take the LAST
+    // two fields as timestamp, consumption_kwh.
+    const consumption_kwh = parseFloat(parts[parts.length-1]);
+    const timestamp = parts[parts.length-2];
+    if (isNaN(consumption_kwh) || !timestamp || isNaN(Date.parse(timestamp))){
+      skipped++; continue; // likely a header row or malformed line
+    }
+    readings.push({ timestamp, consumption_kwh });
+  }
+  return { readings, skipped };
+}
+
+document.getElementById('loadExampleBtn').addEventListener('click', async ()=>{
+  if (!LIVE){ setAnalyzeStatus('Connect the backend first.', 'error'); return; }
+  try {
+    const exampleMeter = (consumers[0] && consumers[0].meter) || 'MTR-400000';
+    const res = await apiGet(`/meters/${encodeURIComponent(exampleMeter)}/raw-readings?limit=200`);
+    document.getElementById('analyzeMeterId').value = exampleMeter+'-EXAMPLE';
+    document.getElementById('analyzeCsvInput').value =
+      'timestamp,consumption_kwh\n' + res.readings.map(r=>`${r.timestamp},${r.consumption_kwh}`).join('\n');
+    setAnalyzeStatus(`Loaded ${res.readings.length} real readings from ${exampleMeter}. Click "Run analysis".`, 'success');
+  } catch(e){ setAnalyzeStatus('Could not load an example: '+e.message, 'error'); }
+});
+
+document.getElementById('downloadTemplateBtn').addEventListener('click', ()=>{
+  const blob = new Blob([EXAMPLE_CSV_TEMPLATE], {type:'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'meter_readings_template.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  setAnalyzeStatus('Template downloaded — fill it in with real readings and upload it back.', 'success');
+});
+
+document.getElementById('analyzeFileInput').addEventListener('change', (e)=>{
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = () => {
+    document.getElementById('analyzeCsvInput').value = reader.result;
+    setAnalyzeStatus(`Loaded file: ${file.name}`, 'success');
+  };
+  reader.onerror = () => setAnalyzeStatus('Could not read that file.', 'error');
+  reader.readAsText(file);
+});
+
+document.getElementById('resetAnalyzeBtn').addEventListener('click', ()=>{
+  document.getElementById('analyzeMeterId').value = '';
+  document.getElementById('analyzeCsvInput').value = '';
+  document.getElementById('analyzeFileInput').value = '';
+  document.getElementById('analyzeResultPanel').style.display = 'none';
+  setAnalyzeStatus('', 'info');
+});
+
+function setAnalyzeLoading(isLoading){
+  document.getElementById('runAnalyzeBtn').disabled = isLoading;
+  document.getElementById('runAnalyzeBtn').textContent = isLoading ? 'Analyzing…' : 'Run analysis';
+  document.getElementById('analyzeSpinner').style.display = isLoading ? 'inline-block' : 'none';
+}
+
+document.getElementById('runAnalyzeBtn').addEventListener('click', async ()=>{
+  if (!LIVE){ setAnalyzeStatus('Connect the backend first — this cannot run without it.', 'error'); return; }
+
+  const { readings, skipped } = parseReadingsCsv(document.getElementById('analyzeCsvInput').value);
+  if (readings.length < 2){
+    setAnalyzeStatus(`Need at least 2 valid readings (found ${readings.length}${skipped?`, skipped ${skipped} line(s)`:''}). Paste readings, upload a file, or load the example.`, 'error');
+    return;
+  }
+  setAnalyzeStatus(`Parsed ${readings.length} readings${skipped?` (skipped ${skipped} header/invalid line(s))`:''}. Running real pipeline…`, 'info');
+  setAnalyzeLoading(true);
+
+  const meterIdInput = document.getElementById('analyzeMeterId').value.trim() || null;
+  try {
+    const result = await apiPost('/analyze', { meter_id: meterIdInput, readings }, 60000);
+    renderAnalyzeResult(result, readings);
+    setAnalyzeStatus(`Done — ${readings.length} readings processed by feature_engineering.py + the trained models.`, 'success');
+  } catch(e){
+    setAnalyzeStatus('Analysis failed: '+e.message, 'error');
+  } finally {
+    setAnalyzeLoading(false);
+  }
+});
+
+function renderAnalyzeResult(result, readings){
+  const panel = document.getElementById('analyzeResultPanel');
+  panel.style.display = 'block';
+  const tier = result.risk_tier;
+  document.getElementById('analyzeResultNote').textContent =
+    [result.meter_id, result.reading_count ? result.reading_count+' daily readings' : null].filter(Boolean).join(' · ');
+  document.getElementById('analyzeScoreValue').textContent = (result.risk_score*100).toFixed(0);
+  document.getElementById('analyzeScoreValue').style.color = tierColor(tier);
+  document.getElementById('analyzeTierLabel').textContent = tier.toUpperCase();
+  document.getElementById('analyzeTierLabel').style.color = tierColor(tier);
+  document.getElementById('analyzeRfValue').textContent = result.rf_probability.toFixed(2);
+  document.getElementById('analyzeKmValue').textContent = result.kmeans_anomaly_score.toFixed(2);
+
+  // Live substitution using the REAL weights/thresholds the server reported
+  if (result.formula){
+    const f = result.formula;
+    document.getElementById('formulaSubstitution').innerHTML =
+      `${f.rf_weight} × ${result.rf_probability.toFixed(2)} + ${f.kmeans_weight} × ${result.kmeans_anomaly_score.toFixed(2)} = <b>${result.risk_score.toFixed(4)}</b> → `+
+      `${result.risk_score>=f.high_threshold?'≥ '+f.high_threshold+' → HIGH':result.risk_score>=f.medium_threshold?'≥ '+f.medium_threshold+' → MEDIUM':'< '+f.medium_threshold+' → LOW'}`;
+  }
+
+  // Top 3 — backend already sorts by RF importance when available
+  const breakdown = result.features || [];
+  const top3 = breakdown.slice(0,3);
+  document.getElementById('analyzeTop3').innerHTML = top3.length ? top3.map((f,i)=>{
+    const label = FEATURE_LABELS[f.feature] || f.feature;
+    const desc = FEATURE_DESCRIPTIONS[f.feature] || '';
+    const cmp = f.dataset_average!=null
+      ? ` <span style="color:${f.above_average?'var(--amber)':'var(--text-faint)'}">(dataset avg ${f.dataset_average})</span>` : '';
+    const pct = f.importance!=null ? ` · RF importance ${Math.round(f.importance*100)}%` : '';
+    return `<div class="investigation-box" style="margin-bottom:8px;">
+      <div style="font-size:12.5px;"><b>#${i+1} ${label}</b>${cmp}</div>
+      <div class="mono" style="font-size:13px;margin-top:3px;">${f.value}${pct}</div>
+      <div class="footnote" style="margin-top:4px;">${desc}</div>
+    </div>`;
+  }).join('') : `<div class="footnote">Train the Random Forest with --metrics-out to rank factors by importance (see README).</div>`;
+
+  // All 9 features, each with its value and a one-line description
+  const fv = result.feature_values || {};
+  document.getElementById('analyzeFeatureValues').innerHTML = Object.entries(fv).map(([k,v])=>
+    `<div class="feat-row" style="align-items:flex-start;"><span>${FEATURE_LABELS[k]||k}<div class="footnote" style="margin-top:2px;">${FEATURE_DESCRIPTIONS[k]||''}</div></span><b class="mono" style="white-space:nowrap;margin-left:10px;">${v}</b></div>`
+  ).join('');
+
+  const warnings = result.warnings || [];
+  document.getElementById('analyzeWarnings').innerHTML = warnings.length
+    ? `<div class="section-tag">data quality notes</div>` + warnings.map(w=>`<div class="footnote" style="color:var(--amber);">⚠ ${w}</div>`).join('')
+    : '';
+
+  renderAnalyzeCharts(result, readings);
+}
+
+async function refreshFormulaPanel(){
+  if (!LIVE) return;
+  try {
+    const insights = await apiGet('/model/insights');
+    if (insights.formula){
+      const f = insights.formula;
+      document.getElementById('formulaLine').textContent =
+        `Risk score = ${f.rf_weight} × RF probability + ${f.kmeans_weight} × K-means anomaly score`;
+      document.getElementById('thresholdLines').innerHTML =
+        `<div>risk score ≥ <b class="mono">${f.high_threshold}</b> → <span class="chip red">HIGH</span></div>
+         <div>risk score ≥ <b class="mono">${f.medium_threshold}</b> → <span class="chip amber">MEDIUM</span></div>
+         <div>otherwise → <span class="chip green">LOW</span></div>`;
+    }
+  } catch(e){ /* keep the static (accurate) fallback already in the HTML */ }
+}
+
+/* =====================================================================
+   v2 — analytics, charts and the audit chain view
+   ===================================================================== */
+const HAS_CHART = typeof Chart !== 'undefined';
+const C = {amber:'#F0A93E', blue:'#4C8DFF', green:'#3FBF8F', red:'#E5484D', violet:'#9B8CFF', teal:'#2FB6C9', grey:'#5B6478'};
+const OUTCOME_ORDER = ['Pending','Confirmed after inspection','Not confirmed','Requires further review'];
+const OUTCOME_COLORS = {'Pending':C.blue,'Confirmed after inspection':C.red,'Not confirmed':C.green,'Requires further review':C.amber};
+const OUTCOME_SHORT = {'Pending':'Pending','Confirmed after inspection':'Confirmed','Not confirmed':'Not confirmed','Requires further review':'Needs review'};
+const OUTCOME_CODE_LABEL = {pending:'Pending', confirmed:'Confirmed after inspection', not_confirmed:'Not confirmed', requires_further_review:'Requires further review'};
+const THRESH = {high:0.72, medium:0.42};
+const LOGSTATE = {ovHist:false, consHist:false};
+const DEMO_GENESIS = fakeHash64(900);
+
+let analytics = null, chainData = null, modelInsights = null;
+const CHARTS = {};
+
+if (HAS_CHART){
+  Chart.defaults.color = '#8A93A6';
+  Chart.defaults.font.family = "'IBM Plex Sans', sans-serif";
+  Chart.defaults.font.size = 11;
+  Chart.defaults.borderColor = '#1c2333';
+  Chart.defaults.animation.duration = 450;
+  const tt = Chart.defaults.plugins.tooltip;
+  tt.backgroundColor = '#0A0E15'; tt.borderColor = '#2B3550'; tt.borderWidth = 1;
+  tt.titleColor = '#E7EBF2'; tt.bodyColor = '#B7BFCF'; tt.padding = 10; tt.cornerRadius = 8; tt.boxPadding = 4;
+  Chart.defaults.plugins.legend.labels.usePointStyle = true;
+  Chart.defaults.plugins.legend.labels.boxWidth = 8;
+  Chart.defaults.plugins.legend.labels.boxHeight = 8;
+
+  // Text in the hole of a doughnut: options.plugins.centerText = {text, sub}
+  Chart.register({
+    id:'centerText',
+    afterDraw(chart, args, opts){
+      if (!opts || !opts.text) return;
+      const a = chart.chartArea; if (!a) return;
+      const x = (a.left+a.right)/2, y = (a.top+a.bottom)/2, ctx = chart.ctx;
+      ctx.save(); ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillStyle = '#E7EBF2'; ctx.font = "600 22px 'IBM Plex Mono', monospace";
+      ctx.fillText(opts.text, x, y - (opts.sub ? 8 : 0));
+      if (opts.sub){ ctx.fillStyle = '#8A93A6'; ctx.font = "400 10.5px 'IBM Plex Sans', sans-serif"; ctx.fillText(opts.sub, x, y + 14); }
+      ctx.restore();
+    }
+  });
+  // Dashed reference lines: options.plugins.refLines = {lines:[{value,label,color}]} (vertical, on the x scale)
+  Chart.register({
+    id:'refLines',
+    afterDatasetsDraw(chart, args, opts){
+      if (!opts || !opts.lines || !chart.scales.x) return;
+      const a = chart.chartArea, xs = chart.scales.x, ctx = chart.ctx;
+      ctx.save();
+      opts.lines.forEach(l=>{
+        const px = xs.getPixelForValue(l.value);
+        if (px < a.left || px > a.right) return;
+        ctx.strokeStyle = l.color || '#8A93A6'; ctx.lineWidth = 1.2; ctx.setLineDash([4,4]);
+        ctx.beginPath(); ctx.moveTo(px, a.top); ctx.lineTo(px, a.bottom); ctx.stroke();
+        if (l.label){
+          ctx.setLineDash([]); ctx.fillStyle = l.color || '#8A93A6';
+          ctx.font = "10px 'IBM Plex Mono', monospace"; ctx.textAlign = 'center';
+          ctx.fillText(l.label, px, a.top - 4);
+        }
+      });
+      ctx.restore();
+    }
+  });
+}
+
+/* ---------- small helpers ---------- */
+function fakeHash64(seed){ return fakeHash(seed) + fakeHash(seed + 7919); }
+function escHtml(value){
+  return String(value ?? '').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+}
+function shortHash(value){
+  const text = String(value || '');
+  return text.length < 18 ? text : text.slice(0, 8) + '…' + text.slice(-6);
+}
+function shortId(m){ m = String(m || ''); return m.length > 14 ? m.slice(0,6)+'…'+m.slice(-4) : m; }
+function fmtN(n){ return Number(n).toLocaleString('en-IN'); }
+function fmtTime(ms){
+  if (!ms) return '—';
+  return new Date(ms).toLocaleString('en-IN', {day:'numeric', month:'short', hour:'numeric', minute:'2-digit', hour12:true});
+}
+function fmtDur(ms){
+  const s = Math.abs(ms)/1000;
+  if (s < 90) return Math.round(s)+' s';
+  if (s < 5400) return Math.round(s/60)+' min';
+  if (s < 129600) return (s/3600).toFixed(1)+' h';
+  return (s/86400).toFixed(1)+' d';
+}
+function chainIndex(rec){
+  const match = String(rec.block ?? '').match(/(\d+)/);
+  return match ? Number(match[1]) : 0;
+}
+function tierOfScore(v){ return v >= THRESH.high ? 'high' : v >= THRESH.medium ? 'medium' : 'low'; }
+function tierHex(t){ return t==='high' ? C.red : t==='medium' ? C.amber : C.green; }
+function histColor(center){ return center >= THRESH.high ? C.red : center >= THRESH.medium ? C.amber : C.green; }
+function outcomeLabelOf(o){ return o ? (OUTCOME_CODE_LABEL[o] || o) : null; }
+function copyText(text){
+  const done = ()=>showToast('Copied to clipboard');
+  if (navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(text).then(done, ()=>showToast('Could not copy — select the text manually'));
+    return;
+  }
+  try {
+    const ta = document.createElement('textarea'); ta.value = text; document.body.appendChild(ta);
+    ta.select(); document.execCommand('copy'); document.body.removeChild(ta); done();
+  } catch(e){ showToast('Could not copy — select the text manually'); }
+}
+document.addEventListener('click', e=>{
+  const t = e.target.closest && e.target.closest('[data-copy]');
+  if (t){ e.stopPropagation(); copyText(t.dataset.copy); }
+}, true);
+
+function mkChart(id, config){
+  if (!HAS_CHART) return null;
+  const el = document.getElementById(id);
+  if (!el) return null;
+  if (CHARTS[id]) CHARTS[id].destroy();
+  CHARTS[id] = new Chart(el, config);
+  return CHARTS[id];
+}
+function chartEmpty(id, isEmpty, msg){
+  const el = document.getElementById(id);
+  if (!el) return;
+  const wrap = el.parentElement;
+  let note = wrap.querySelector('.chart-empty');
+  if (!note){ note = document.createElement('div'); note.className = 'chart-empty'; wrap.appendChild(note); }
+  note.textContent = msg || 'No data yet';
+  note.style.display = isEmpty ? 'flex' : 'none';
+  el.style.visibility = isEmpty ? 'hidden' : 'visible';
+  if (isEmpty && CHARTS[id]){ CHARTS[id].destroy(); delete CHARTS[id]; }
+}
+const axisX = (extra)=>Object.assign({grid:{display:false}, ticks:{font:{size:10}}}, extra||{});
+const axisY = (extra)=>Object.assign({grid:{color:gridColor}, ticks:{font:{size:10}}}, extra||{});
+const legendBottom = {position:'bottom', labels:{padding:14, font:{size:10.5}}};
+
+/* ---------- analytics source ---------- */
+function analyticsFromConsumers(){
+  const bins = Array.from({length:20}, (_,i)=>(i*0.05).toFixed(2));
+  const mk = ()=>Array(20).fill(0);
+  const idx = v=>Math.min(19, Math.max(0, Math.floor(v/0.05)));
+  const risk = mk(), rf = mk(), km = mk();
+  const th = {low:mk(), medium:mk(), high:mk()};
+  const means = {low:{count:0,rf:0,km:0,risk:0}, medium:{count:0,rf:0,km:0,risk:0}, high:{count:0,rf:0,km:0,risk:0}};
+  consumers.forEach(c=>{
+    risk[idx(c.score)]++; rf[idx(c.rf)]++; km[idx(c.km)]++; th[c.tier][idx(c.score)]++;
+    const m = means[c.tier]; m.count++; m.rf += c.rf; m.km += c.km; m.risk += c.score;
+  });
+  Object.values(means).forEach(m=>{ if (m.count){ m.rf /= m.count; m.km /= m.count; m.risk /= m.count; } });
+  return {total:consumers.length, bins, risk_hist:risk, rf_hist:rf, km_hist:km, tier_hist:th,
+    scatter:consumers.map(c=>({x:c.rf, y:c.km, tier:c.tier})), tier_means:means,
+    correlation_rf_km:null, tier_profile:null, demo:!LIVE};
+}
+function tierCounts(){
+  if (LIVE && analytics && analytics.tier_means && !analytics.demo){
+    const m = analytics.tier_means;
+    return {low:m.low.count, medium:m.medium.count, high:m.high.count};
+  }
+  const r = {low:0, medium:0, high:0};
+  consumers.forEach(c=>r[c.tier]++);
+  return r;
+}
+
+/* ---------- Overview ---------- */
+function histOptions(log, titleFn, labelFn, stacked){
+  return {responsive:true, maintainAspectRatio:false,
+    plugins:{legend:stacked ? {position:'bottom', labels:{padding:12, font:{size:10.5}}} : {display:false},
+      tooltip:{callbacks:{title:titleFn, label:labelFn}}},
+    scales:{
+      x:axisX({stacked:!!stacked, ticks:{maxRotation:0, autoSkip:true, maxTicksLimit:10, font:{size:10}}}),
+      y:axisY(Object.assign({stacked:!!stacked}, log ? {type:'logarithmic', min:1} : {beginAtZero:true}))
+    }};
+}
+function renderOverviewCharts(){
+  if (!HAS_CHART || !analytics) return;
+  const a = analytics, log = LOGSTATE.ovHist;
+  const bandTitle = it=>{ const lo = parseFloat(a.bins[it[0].dataIndex]); return 'Risk score '+lo.toFixed(2)+' to '+(lo+0.05).toFixed(2); };
+  document.getElementById('ovHistLogBtn').classList.toggle('active', log);
+  document.getElementById('ovHistNote').textContent = fmtN(a.total||0)+' meters in 0.05 score bands'+(a.demo ? ' (demo data)' : '');
+  mkChart('ovHist', {type:'bar',
+    data:{labels:a.bins, datasets:[{data:a.risk_hist.map(v=>log && v===0 ? null : v),
+      backgroundColor:a.bins.map(b=>histColor(parseFloat(b)+0.025)), borderRadius:3, categoryPercentage:1, barPercentage:.9}]},
+    options:histOptions(log, bandTitle, c=>fmtN(c.parsed.y)+' meters', false)});
+
+  // top 10
+  const top = consumers.slice().sort((x,y)=>y.score-x.score).slice(0,10);
+  chartEmpty('ovTop', !top.length, 'No meters to show yet');
+  if (top.length){
+    mkChart('ovTop', {type:'bar',
+      data:{labels:top.map(c=>shortId(c.meter)), datasets:[{data:top.map(c=>+(c.score*100).toFixed(1)),
+        backgroundColor:top.map(c=>tierHex(c.tier)), borderRadius:4, barThickness:16}]},
+      options:{indexAxis:'y', responsive:true, maintainAspectRatio:false,
+        onClick:(e,els)=>{ if (els.length) openConsumer(top[els[0].index]); },
+        onHover:(e,els)=>{ e.native.target.style.cursor = els.length ? 'pointer' : 'default'; },
+        plugins:{legend:{display:false}, tooltip:{callbacks:{title:it=>top[it[0].dataIndex].meter, label:c=>'Risk score '+c.parsed.x}}},
+        scales:{x:axisX({min:0, max:100, grid:{color:gridColor}}), y:axisY({grid:{display:false}, ticks:{font:{family:"'IBM Plex Mono', monospace", size:10}}})}}});
+  }
+
+  // tier means
+  const m = a.tier_means, tiers = ['low','medium','high'];
+  mkChart('ovTierMeans', {type:'bar',
+    data:{labels:['Low','Medium','High'], datasets:[
+      {label:'RF probability', data:tiers.map(t=>m[t].rf), backgroundColor:C.blue, borderRadius:4},
+      {label:'K-means score', data:tiers.map(t=>m[t].km), backgroundColor:C.violet, borderRadius:4},
+      {label:'Blended risk', data:tiers.map(t=>m[t].risk), backgroundColor:C.amber, borderRadius:4}]},
+    options:{responsive:true, maintainAspectRatio:false,
+      plugins:{legend:legendBottom, tooltip:{callbacks:{title:it=>it[0].label+' tier · '+fmtN(m[tiers[it[0].dataIndex]].count)+' meters', label:c=>c.dataset.label+': '+Number(c.parsed.y).toFixed(3)}}},
+      scales:{x:axisX(), y:axisY({min:0, max:1})}}});
+}
+
+/* ---------- Consumers ---------- */
+function renderConsumerCharts(){
+  if (!HAS_CHART || !analytics) return;
+  const a = analytics, log = LOGSTATE.consHist;
+  document.getElementById('consHistLogBtn').classList.toggle('active', log);
+  const nz = arr=>arr.map(v=>log && v===0 ? null : v);
+  const bandTitle = it=>{ const lo = parseFloat(a.bins[it[0].dataIndex]); return 'Risk score '+lo.toFixed(2)+' to '+(lo+0.05).toFixed(2); };
+  mkChart('consHist', {type:'bar',
+    data:{labels:a.bins, datasets:[
+      {label:'Low', data:nz(a.tier_hist.low), backgroundColor:C.green, borderRadius:2},
+      {label:'Medium', data:nz(a.tier_hist.medium), backgroundColor:C.amber, borderRadius:2},
+      {label:'High', data:nz(a.tier_hist.high), backgroundColor:C.red, borderRadius:2}]},
+    options:histOptions(log, bandTitle, c=>c.dataset.label+': '+fmtN(c.parsed.y), true)});
+
+  const pct = arr=>arr.map(v=>a.total ? +(v/a.total*100).toFixed(2) : 0);
+  const corr = a.correlation_rf_km;
+  document.getElementById('consModelsNote').textContent = 'Share of meters per 0.05 band'+(corr!=null ? ' · correlation '+Number(corr).toFixed(2) : '');
+  mkChart('consModels', {type:'line',
+    data:{labels:a.bins, datasets:[
+      {label:'Random Forest', data:pct(a.rf_hist), borderColor:C.blue, backgroundColor:'rgba(76,141,255,.12)', fill:true, tension:.35, pointRadius:0, borderWidth:2},
+      {label:'K-means', data:pct(a.km_hist), borderColor:C.violet, backgroundColor:'rgba(155,140,255,.12)', fill:true, tension:.35, pointRadius:0, borderWidth:2}]},
+    options:{responsive:true, maintainAspectRatio:false, interaction:{mode:'index', intersect:false},
+      plugins:{legend:legendBottom, tooltip:{callbacks:{title:it=>'Score '+a.bins[it[0].dataIndex]+' and above', label:c=>c.dataset.label+': '+c.parsed.y+'% of meters'}}},
+      scales:{x:axisX({ticks:{maxRotation:0, autoSkip:true, maxTicksLimit:7, font:{size:10}}}), y:axisY({beginAtZero:true, ticks:{callback:v=>v+'%', font:{size:10}}})}}});
+}
+document.getElementById('ovHistLogBtn').addEventListener('click', ()=>{ LOGSTATE.ovHist = !LOGSTATE.ovHist; renderOverviewCharts(); });
+document.getElementById('consHistLogBtn').addEventListener('click', ()=>{ LOGSTATE.consHist = !LOGSTATE.consHist; renderConsumerCharts(); });
+
+/* ---------- Investigations ---------- */
+function caseRows(){
+  return invCases.map(ic=>{
+    const c = findConsumer(ic.consumerId);
+    const score = ic.riskScore != null ? ic.riskScore : (c ? c.score : null);
+    return Object.assign({}, ic, {score, tier:score == null ? 'low' : tierOfScore(score), meter:c ? c.meter : ic.consumerId});
+  });
+}
+function renderOutcomeCharts(){
+  const rows = caseRows();
+  const counts = {}; OUTCOME_ORDER.forEach(o=>counts[o] = 0);
+  rows.forEach(r=>{ counts[r.outcome] = (counts[r.outcome]||0) + 1; });
+  const total = rows.length;
+  const confirmed = counts['Confirmed after inspection'], notConf = counts['Not confirmed'];
+  const closed = confirmed + notConf;
+
+  // KPI strip
+  const kpi = (label, value, delta, chip)=>`<div class="stat-card"><div class="stat-top"><span class="stat-label">${label}</span>${chip||''}</div><div class="stat-value">${value}</div><div class="stat-delta" style="color:var(--text-faint);">${delta}</div></div>`;
+  document.getElementById('invKpis').innerHTML =
+    kpi('Total cases', total, 'all inspectors') +
+    kpi('Open', counts['Pending'], 'waiting for a field outcome', '<span class="chip blue">PENDING</span>') +
+    kpi('Confirmed', confirmed, 'after inspection', '<span class="chip red">THEFT</span>') +
+    kpi('Not confirmed', notConf, 'cleared by inspection', '<span class="chip green">CLEAR</span>') +
+    kpi('Confirmation rate', closed ? Math.round(confirmed/closed*100)+'%' : '—', closed ? confirmed+' of '+closed+' closed cases' : 'no closed cases yet');
+
+  if (!HAS_CHART) return;
+  const doughnut = (id)=>{
+    chartEmpty(id, !total, 'No investigations opened yet');
+    if (!total) return;
+    mkChart(id, {type:'doughnut',
+      data:{labels:OUTCOME_ORDER.map(o=>OUTCOME_SHORT[o]), datasets:[{data:OUTCOME_ORDER.map(o=>counts[o]),
+        backgroundColor:OUTCOME_ORDER.map(o=>OUTCOME_COLORS[o]), borderColor:'#121826', borderWidth:3, hoverOffset:4}]},
+      options:{responsive:true, maintainAspectRatio:false, cutout:'68%',
+        plugins:{legend:legendBottom, centerText:{text:String(total), sub:'cases'},
+          tooltip:{callbacks:{label:c=>c.label+': '+c.parsed+' ('+Math.round(c.parsed/total*100)+'%)'}}}}});
+  };
+  doughnut('ovOutcome'); doughnut('invOutcome');
+
+  // inspector workload
+  const inspectorsList = Array.from(new Set(rows.map(r=>r.inspector).filter(Boolean)));
+  chartEmpty('invInspector', !inspectorsList.length, 'No investigations opened yet');
+  if (inspectorsList.length){
+    mkChart('invInspector', {type:'bar',
+      data:{labels:inspectorsList.map(n=>n.replace(/^Insp\.\s*/,'')),
+        datasets:OUTCOME_ORDER.map(o=>({label:OUTCOME_SHORT[o], backgroundColor:OUTCOME_COLORS[o], borderRadius:3,
+          data:inspectorsList.map(n=>rows.filter(r=>r.inspector===n && r.outcome===o).length)}))},
+      options:{responsive:true, maintainAspectRatio:false,
+        plugins:{legend:legendBottom},
+        scales:{x:axisX({stacked:true}), y:axisY({stacked:true, beginAtZero:true, ticks:{precision:0, font:{size:10}}})}}});
+  }
+
+  // cases opened per day + running total
+  const byDay = {};
+  rows.forEach(r=>{ if (r.opened) byDay[r.opened] = (byDay[r.opened]||0) + 1; });
+  const days = Object.keys(byDay).sort();
+  chartEmpty('invTimeline', !days.length, 'No investigations opened yet');
+  if (days.length){
+    let run = 0; const cumulative = days.map(d=>(run += byDay[d]));
+    mkChart('invTimeline', {data:{labels:days.map(d=>d.slice(5)), datasets:[
+        {type:'bar', label:'Opened that day', data:days.map(d=>byDay[d]), backgroundColor:'rgba(76,141,255,.55)', borderRadius:3, yAxisID:'y'},
+        {type:'line', label:'Running total', data:cumulative, borderColor:C.amber, backgroundColor:C.amber, tension:.3, pointRadius:3, borderWidth:2, yAxisID:'y1'}]},
+      options:{responsive:true, maintainAspectRatio:false, interaction:{mode:'index', intersect:false},
+        plugins:{legend:legendBottom},
+        scales:{x:axisX(), y:axisY({beginAtZero:true, ticks:{precision:0, font:{size:10}}}),
+          y1:{position:'right', beginAtZero:true, grid:{display:false}, ticks:{precision:0, font:{size:10}}}}}});
+  }
+
+  // risk score per case
+  const scored = rows.filter(r=>r.score != null);
+  chartEmpty('invRisk', !scored.length, 'No investigations opened yet');
+  if (scored.length){
+    mkChart('invRisk', {type:'bar',
+      data:{labels:scored.map(r=>r.case), datasets:[{data:scored.map(r=>+(r.score*100).toFixed(1)),
+        backgroundColor:scored.map(r=>tierHex(r.tier)+'99'), borderColor:scored.map(r=>OUTCOME_COLORS[r.outcome]||C.grey),
+        borderWidth:2, borderRadius:4}]},
+      options:{responsive:true, maintainAspectRatio:false,
+        plugins:{legend:{display:false}, tooltip:{callbacks:{
+          title:it=>scored[it[0].dataIndex].case+' · '+shortId(scored[it[0].dataIndex].meter),
+          label:c=>['Risk score '+c.parsed.y, 'Outcome: '+scored[c.dataIndex].outcome]}}},
+        scales:{x:axisX({ticks:{maxRotation:60, font:{size:9.5}}}), y:axisY({min:0, max:100})}}});
+  }
+}
+
+/* =====================================================================
+   Audit chain
+   ===================================================================== */
+// One shape for the chain, whether it came from /audit/chain (live) or from
+// the records the page holds (demo, or an older backend without that endpoint).
+function buildChainModel(){
+  const blocks = [];
+  if (LIVE && chainData && chainData.blocks){
+    chainData.blocks.forEach(b=>blocks.push({
+      index:b.index, kind:b.kind, investigationId:b.investigation_id, caseLabel:b.investigation_id != null ? 'INV-'+b.investigation_id : null,
+      meter:b.meter_id, outcome:outcomeLabelOf(b.outcome), risk:b.risk_score,
+      eventHash:b.event_hash, blockHash:b.block_hash, prevHash:b.previous_hash, serverLinkOk:b.link_ok,
+      createdMs:b.created_at*1000, sepoliaTx:b.sepolia_tx || '', tampered:false, mock:false, rec:null
+    }));
+  } else {
+    const recs = chainRecords.slice().sort((a,b)=>chainIndex(a)-chainIndex(b));
+    const lastOfCase = {};
+    recs.forEach(r=>{ lastOfCase[r.case] = chainIndex(r); });
+    blocks.push({index:0, kind:'genesis', blockHash:LIVE ? '' : DEMO_GENESIS, eventHash:'', prevHash:'', createdMs:recs.length ? (recs[0].createdAt||0) - 3600000 : 0,
+      caseLabel:null, outcome:null, risk:null, sepoliaTx:'', tampered:false, mock:false, rec:null});
+    recs.forEach(r=>blocks.push({
+      index:chainIndex(r), kind:lastOfCase[r.case] === chainIndex(r) ? 'current' : 'superseded',
+      investigationId:r.investigationId != null ? r.investigationId : null, caseLabel:r.case, meter:r.consumerName,
+      outcome:r.outcome ? (OUTCOME_CODE_LABEL[r.outcome] || r.outcome) : null, risk:r.risk != null ? r.risk : null,
+      eventHash:r.hash, blockHash:r.blockHash || '', prevHash:r.previousHash || '', serverLinkOk:null,
+      createdMs:r.createdAt || 0, sepoliaTx:r.sepoliaTx || '', tampered:!!r.tampered, mock:!!r.mock, rec:r
+    }));
+  }
+  // Link check: compare the hashes themselves rather than trusting a flag.
+  blocks.forEach((b,i)=>{
+    if (i === 0){ b.linkOk = true; return; }
+    const p = blocks[i-1];
+    b.linkOk = (p.blockHash && b.prevHash) ? p.blockHash === b.prevHash : (b.serverLinkOk != null ? b.serverLinkOk : null);
+  });
+  // Which later block replaced each superseded one
+  blocks.forEach(b=>{
+    if (b.kind !== 'superseded') return;
+    const later = b.caseLabel ? blocks.find(x=>x.caseLabel === b.caseLabel && x.index > b.index && x.kind === 'current') : null;
+    b.supersededBy = later ? later.index : null;
+  });
+  return {blocks};
+}
+
+function hashPrintHtml(hex){
+  const h = String(hex || '').replace(/[^0-9a-f]/gi,'').toLowerCase().padEnd(64,'0');
+  const col = [C.amber, C.blue, C.green][parseInt(h[63],16) % 3];
+  let cells = '';
+  for (let r=0; r<8; r++) for (let c=0; c<4; c++){
+    if (parseInt(h[r*4+c],16) >= 7) cells += `<rect x="${c}" y="${r}" width="1" height="1"/><rect x="${7-c}" y="${r}" width="1" height="1"/>`;
+  }
+  return `<span class="fp" aria-hidden="true"><svg viewBox="0 0 8 8" shape-rendering="crispEdges" fill="${col}">${cells}</svg></span>`;
+}
+function hashRow(label, hash){
+  if (!hash) return `<div class="crow"><span class="k">${label}</span><span class="v">—</span></div>`;
+  return `<div class="crow"><span class="k">${label}</span><span class="v hash-copy" data-copy="${escHtml(hash)}" title="${escHtml(hash)} — click to copy">${escHtml(shortHash(hash))}</span></div>`;
+}
+function chainJoinHtml(prev, b){
+  if (!b) return `<div class="cjoin pending"><div class="bar"></div><div>next block<br>attaches here</div></div>`;
+  const full = escHtml(b.prevHash || '');
+  if (b.linkOk === true)  return `<div class="cjoin" title="This block records the hash of the block before it: ${full}"><div class="bar"></div><div>✓ linked<br>${escHtml(shortHash(b.prevHash))}</div></div>`;
+  if (b.linkOk === false) return `<div class="cjoin bad" title="This block expects ${full}, but the block before it now hashes differently"><div class="bar"></div><div>✕ link broken<br>${escHtml(shortHash(b.prevHash))}</div></div>`;
+  return `<div class="cjoin pending" title="Block hashes were not supplied, so this link can't be checked here"><div class="bar"></div><div>link not<br>checked</div></div>`;
+}
+function chainNodeHtml(b){
+  const fp = hashPrintHtml(b.blockHash || b.eventHash);
+  if (b.kind === 'genesis'){
+    return `<div class="cnode genesis" data-block="0">
+      <div class="cnode-head">${fp}<div class="cnode-id"><div class="cnode-block">BLOCK 0</div><div class="cnode-title">Genesis</div></div></div>
+      <div class="cnode-sub">Start of the chain. No outcome is stored in this block.</div>
+      <div class="cnode-rows">${hashRow('Block hash', b.blockHash)}<div class="crow"><span class="k">Created</span><span class="v">${escHtml(fmtTime(b.createdMs))}</span></div></div>
+    </div>`;
+  }
+  const chip = b.tampered ? '<span class="chip red">TAMPERED</span>' : b.kind === 'current' ? '<span class="chip green">CURRENT</span>' : '<span class="chip grey">SUPERSEDED</span>';
+  const title = b.caseLabel ? `${escHtml(b.caseLabel)}${b.outcome ? ' · '+escHtml(OUTCOME_SHORT[b.outcome] || b.outcome) : ''}` : 'Earlier save';
+  let sub;
+  if (b.kind === 'superseded'){
+    sub = b.supersededBy != null ? `Replaced by block ${b.supersededBy}. This one stays in the chain.`
+        : b.caseLabel ? 'An earlier save of this case. It stays in the chain.'
+        : 'An earlier save made before cases kept their history. The block is still linked.';
+  } else {
+    sub = b.meter ? 'Meter '+escHtml(shortId(b.meter)) : '&nbsp;';
+  }
+  let action = '';
+  if (b.tampered) action = '<div class="verify-fail" style="font-size:12px;">✕ marked tampered</div>';
+  else if (b.kind === 'current' && b.mock) action = '<div class="verify-ok" style="font-size:12px;">✓ sample hash</div>';
+  else if (b.kind === 'current' && b.investigationId != null) action = `<button type="button" class="pill-btn" data-verify-live="${Number(b.investigationId)}">Verify on server</button>`;
+  else if (b.kind === 'current' && b.rec && b.rec.payload) action = `<button type="button" class="pill-btn" data-verify-hash="${escHtml(b.eventHash)}">Verify</button>`;
+  const sepolia = b.sepoliaTx
+    ? `<a href="https://sepolia.etherscan.io/tx/${escHtml(b.sepoliaTx)}" target="_blank" rel="noopener">tx ${escHtml(shortHash(b.sepoliaTx))} ↗</a>`
+    : 'Local chain only';
+  return `<div class="cnode${b.kind === 'superseded' ? ' superseded' : ''}${b.tampered ? ' tampered' : ''}" data-block="${b.index}">
+    <div class="cnode-head">${fp}<div class="cnode-id">
+      <div class="cnode-block"><span>BLOCK ${b.index}</span>${chip}</div>
+      <div class="cnode-title">${title}</div></div></div>
+    <div class="cnode-sub">${sub}</div>
+    <div class="cnode-rows">
+      ${hashRow('Block hash', b.blockHash)}
+      ${hashRow('Outcome SHA-256', b.eventHash)}
+      <div class="crow"><span class="k">Saved</span><span class="v">${escHtml(fmtTime(b.createdMs))}</span></div>
+      <div class="crow"><span class="k">Risk score</span><span class="v">${b.risk != null ? (b.risk*100).toFixed(0) : '—'}</span></div>
+      <div class="crow"><span class="k">Sepolia</span><span class="v">${sepolia}</span></div>
+    </div>
+    ${action}
+  </div>`;
+}
+function focusBlock(index){
+  const el = document.querySelector(`#chainViz .cnode[data-block="${index}"]`);
+  if (!el) return;
+  el.scrollIntoView({behavior:'smooth', inline:'center', block:'nearest'});
+  el.classList.add('flash');
+  setTimeout(()=>el.classList.remove('flash'), 1500);
+}
+
+function renderChainKpis(model){
+  const real = model.blocks.filter(b=>b.kind !== 'genesis');
+  const brokenAt = model.blocks.find(b=>b.linkOk === false);
+  const anyTamper = real.some(b=>b.tampered);
+  const unknown = model.blocks.some((b,i)=>i>0 && b.linkOk === null);
+  const current = real.filter(b=>b.kind === 'current').length;
+  const superseded = real.length - current;
+  const onSep = real.filter(b=>b.sepoliaTx).length;
+  const last = real.length ? real[real.length-1] : null;
+  const gaps = []; for (let i=1;i<real.length;i++) gaps.push(real[i].createdMs - real[i-1].createdMs);
+  const avgGap = gaps.length ? gaps.reduce((a,b)=>a+b,0)/gaps.length : null;
+
+  let integrityChip, integrityVal, integrityDelta, integrityPct;
+  if (brokenAt || anyTamper){ integrityChip = '<span class="chip red">BROKEN</span>'; integrityVal = brokenAt ? '⚠ block '+brokenAt.index : '⚠ tampered'; integrityDelta = brokenAt ? 'link to the block before it fails' : 'a record was marked tampered'; integrityPct = 40; }
+  else if (unknown){ integrityChip = '<span class="chip amber">UNKNOWN</span>'; integrityVal = '—'; integrityDelta = 'block hashes not supplied'; integrityPct = 0; }
+  else { integrityChip = '<span class="chip green">VERIFIED</span>'; integrityVal = '100%'; integrityDelta = real.length+' of '+real.length+' links hold'; integrityPct = 100; }
+  const integrityColor = (brokenAt || anyTamper) ? 'var(--red)' : 'var(--green)';
+
+  const card = (label, chip, value, delta, bar, color)=>`<div class="stat-card"><div class="stat-top"><span class="stat-label">${label}</span>${chip||''}</div><div class="stat-value">${value}</div><div class="stat-delta" style="color:var(--text-faint);">${delta}</div>${bar != null ? `<div class="stat-bar"><i style="width:${bar}%;background:${color||'var(--amber)'}"></i></div>` : ''}</div>`;
+  document.getElementById('chainKpis').innerHTML =
+    card('Blocks in the chain', '', real.length, current+' current · '+superseded+' superseded') +
+    card('Chain integrity', integrityChip, integrityVal, integrityDelta, integrityPct, integrityColor) +
+    card('Published to Sepolia', '', real.length ? onSep+' / '+real.length : '—', onSep ? 'same hash, public testnet' : 'local chain only', real.length ? Math.round(onSep/real.length*100) : 0, 'var(--blue)') +
+    card('Latest block', '', last && last.createdMs ? fmtDur(Date.now()-last.createdMs)+' ago' : '—', last ? fmtTime(last.createdMs) : 'nothing saved yet') +
+    card('Average gap', '', avgGap != null ? fmtDur(avgGap) : '—', avgGap != null ? 'between consecutive blocks' : 'needs two blocks');
+}
+function renderChainViz(model){
+  const parts = [];
+  model.blocks.forEach((b,i)=>{
+    if (i > 0) parts.push(chainJoinHtml(model.blocks[i-1], b));
+    parts.push(chainNodeHtml(b));
+  });
+  parts.push(chainJoinHtml(null, null));
+  parts.push(`<div class="cnode wait" style="flex-basis:210px;"><div style="font-family:var(--mono);font-size:11px;">NEXT BLOCK</div><div>Save an outcome and its SHA-256 attaches here.</div></div>`);
+  const viz = document.getElementById('chainViz');
+  viz.innerHTML = parts.join('');
+  viz.querySelectorAll('[data-verify-live]').forEach(btn=>btn.addEventListener('click', ()=>verifyLiveRecord(Number(btn.dataset.verifyLive))));
+  viz.querySelectorAll('[data-verify-hash]').forEach(btn=>btn.addEventListener('click', ()=>verifyChainEntry(btn.dataset.verifyHash)));
+  document.getElementById('chainLegend').innerHTML =
+    '<span><b>Current</b> — the latest save of a case, the one the case points to</span>' +
+    '<span><b>Superseded</b> — an earlier save of a case that was saved again</span>' +
+    '<span><b>Arrow</b> — green when the block records the hash of the block before it</span>' +
+    '<span><b>Pattern</b> — a small picture of each block hash; any change redraws it</span>';
+  // Newest block in view
+  requestAnimationFrame(()=>{ viz.scrollLeft = viz.scrollWidth; });
+}
+function renderChainRevisions(model){
+  const real = model.blocks.filter(b=>b.kind !== 'genesis');
+  const el = document.getElementById('chainRevisions');
+  if (!real.length){ el.innerHTML = '<div class="empty-static">No outcomes have been saved yet.</div>'; return; }
+  const groups = {}, order = [];
+  real.forEach(b=>{
+    const key = b.caseLabel || '__unknown';
+    if (!groups[key]){ groups[key] = []; order.push(key); }
+    groups[key].push(b);
+  });
+  el.innerHTML = order.map(key=>{
+    const list = groups[key];
+    const latest = list[list.length-1];
+    const head = key === '__unknown'
+      ? '<span>Earlier saves</span><span class="chip grey">case not recorded</span>'
+      : `<span class="mono">${escHtml(key)}${latest.meter ? ' <span style="color:var(--text-faint);font-weight:400;">· '+escHtml(shortId(latest.meter))+'</span>' : ''}</span>` +
+        `<span class="chip ${latest.outcome ? ({'Pending':'blue','Confirmed after inspection':'red','Not confirmed':'green','Requires further review':'amber'}[latest.outcome] || 'grey') : 'grey'}">${escHtml(OUTCOME_SHORT[latest.outcome] || 'saved')}</span>`;
+    const steps = list.map((b,i)=>`${i ? '<span class="rev-sep">→</span>' : ''}<button type="button" class="rev-step${b.kind === 'current' ? ' cur' : ''}" data-focus="${b.index}" title="${escHtml(fmtTime(b.createdMs))}"><span class="d" style="background:${OUTCOME_COLORS[b.outcome] || C.grey}"></span>Block ${b.index}${b.outcome ? ' · '+escHtml(OUTCOME_SHORT[b.outcome] || b.outcome) : ''}</button>`).join('');
+    return `<div class="rev-case"><div class="rev-head">${head}</div><div class="rev-steps">${steps}</div></div>`;
+  }).join('');
+  el.querySelectorAll('[data-focus]').forEach(btn=>btn.addEventListener('click', ()=>focusBlock(Number(btn.dataset.focus))));
+}
+function renderChainTable(model){
+  const body = document.getElementById('chainTbody');
+  body.innerHTML = model.blocks.slice().reverse().map(b=>{
+    const status = b.kind === 'genesis' ? '<span class="chip grey">GENESIS</span>' : b.tampered ? '<span class="chip red">TAMPERED</span>' : b.kind === 'current' ? '<span class="chip green">CURRENT</span>' : '<span class="chip grey">SUPERSEDED</span>';
+    const link = b.index === 0 ? '<span style="color:var(--text-faint);">—</span>' : b.linkOk === true ? '<span class="verify-ok">✓ linked</span>' : b.linkOk === false ? '<span class="verify-fail">✕ broken</span>' : '<span style="color:var(--text-faint);">n/a</span>';
+    const oc = b.outcome ? `<span class="chip ${({'Pending':'blue','Confirmed after inspection':'red','Not confirmed':'green','Requires further review':'amber'}[b.outcome]) || 'grey'}">${escHtml(OUTCOME_SHORT[b.outcome] || b.outcome)}</span>` : '<span style="color:var(--text-faint);">—</span>';
+    const sep = b.sepoliaTx ? `<a href="https://sepolia.etherscan.io/tx/${escHtml(b.sepoliaTx)}" target="_blank" rel="noopener" style="color:var(--blue);">${escHtml(shortHash(b.sepoliaTx))} ↗</a>` : '<span style="color:var(--text-faint);">local only</span>';
+    return `<tr data-block="${b.index}"><td class="mono">${b.index}</td><td class="mono">${escHtml(b.caseLabel || (b.kind === 'genesis' ? 'Genesis' : '—'))}</td><td>${oc}</td><td>${status}</td>
+      <td class="mono">${escHtml(fmtTime(b.createdMs))}</td>
+      <td class="mono"><span class="hash-copy" data-copy="${escHtml(b.blockHash)}" title="Click to copy">${escHtml(shortHash(b.blockHash) || '—')}</span></td>
+      <td>${link}</td><td class="mono">${sep}</td></tr>`;
+  }).join('');
+  body.querySelectorAll('tr').forEach(tr=>tr.addEventListener('click', e=>{
+    if (e.target.closest('a') || e.target.closest('[data-copy]')) return;
+    body.querySelectorAll('tr.hl').forEach(r=>r.classList.remove('hl'));
+    tr.classList.add('hl');
+    focusBlock(Number(tr.dataset.block));
+    document.getElementById('chainViz').scrollIntoView({behavior:'smooth', block:'nearest'});
+  }));
+}
+function renderChainCharts(model){
+  if (!HAS_CHART) return;
+  const all = model.blocks, real = all.filter(b=>b.kind !== 'genesis');
+
+  // growth: one point per block, genesis first
+  chartEmpty('chainGrowth', real.length < 1, 'No blocks beyond genesis yet');
+  if (real.length){
+    mkChart('chainGrowth', {type:'line',
+      data:{labels:all.map(b=>b.index === 0 ? 'Genesis' : fmtTime(b.createdMs)),
+        datasets:[{label:'Blocks', data:all.map((b,i)=>i), borderColor:C.amber, backgroundColor:'rgba(240,169,62,.12)', fill:true, stepped:true, pointRadius:4, pointBackgroundColor:all.map(b=>b.linkOk === false ? C.red : C.amber), borderWidth:2}]},
+      options:{responsive:true, maintainAspectRatio:false,
+        plugins:{legend:{display:false}, tooltip:{callbacks:{label:c=>'Block '+all[c.dataIndex].index}}},
+        scales:{x:axisX({ticks:{maxRotation:0, autoSkip:true, maxTicksLimit:4, font:{size:9.5}}}), y:axisY({beginAtZero:true, ticks:{precision:0, font:{size:10}}})}}});
+  }
+
+  // outcomes of current records
+  const counts = {}; OUTCOME_ORDER.forEach(o=>counts[o] = 0);
+  real.filter(b=>b.kind === 'current' && b.outcome).forEach(b=>{ counts[b.outcome] = (counts[b.outcome]||0) + 1; });
+  const totalOutcomes = Object.values(counts).reduce((a,b)=>a+b,0);
+  chartEmpty('chainOutcomes', !totalOutcomes, 'No outcomes recorded yet');
+  if (totalOutcomes){
+    mkChart('chainOutcomes', {type:'doughnut',
+      data:{labels:OUTCOME_ORDER.map(o=>OUTCOME_SHORT[o]), datasets:[{data:OUTCOME_ORDER.map(o=>counts[o]), backgroundColor:OUTCOME_ORDER.map(o=>OUTCOME_COLORS[o]), borderColor:'#121826', borderWidth:3, hoverOffset:4}]},
+      options:{responsive:true, maintainAspectRatio:false, cutout:'68%',
+        plugins:{legend:legendBottom, centerText:{text:String(totalOutcomes), sub:'records'}}}});
+  }
+
+  // risk score at each save
+  const scored = real.filter(b=>b.risk != null);
+  chartEmpty('chainRisk', !scored.length, 'No risk scores on the saved blocks');
+  if (scored.length){
+    mkChart('chainRisk', {type:'bar',
+      data:{labels:scored.map(b=>'#'+b.index), datasets:[{data:scored.map(b=>+(b.risk*100).toFixed(1)),
+        backgroundColor:scored.map(b=>tierHex(tierOfScore(b.risk)) + (b.kind === 'superseded' ? '44' : 'cc')), borderRadius:4}]},
+      options:{responsive:true, maintainAspectRatio:false,
+        plugins:{legend:{display:false}, tooltip:{callbacks:{
+          title:it=>'Block '+scored[it[0].dataIndex].index+' · '+(scored[it[0].dataIndex].caseLabel || 'earlier save'),
+          label:c=>['Risk score '+c.parsed.y, scored[c.dataIndex].outcome || '']}}},
+        scales:{x:axisX(), y:axisY({min:0, max:100})}}});
+  }
+
+  // gaps
+  const gaps = [];
+  for (let i=1;i<real.length;i++) gaps.push({label:'#'+real[i-1].index+' → #'+real[i].index, ms:real[i].createdMs - real[i-1].createdMs});
+  chartEmpty('chainGaps', !gaps.length, 'Needs at least two blocks');
+  if (gaps.length){
+    mkChart('chainGaps', {type:'bar',
+      data:{labels:gaps.map(g=>g.label), datasets:[{data:gaps.map(g=>+(g.ms/60000).toFixed(2)), backgroundColor:'rgba(76,141,255,.7)', borderRadius:4}]},
+      options:{responsive:true, maintainAspectRatio:false,
+        plugins:{legend:{display:false}, tooltip:{callbacks:{label:c=>fmtDur(gaps[c.dataIndex].ms)+' after the previous block'}}},
+        scales:{x:axisX({ticks:{maxRotation:40, font:{size:9.5}}}), y:axisY({beginAtZero:true, title:{display:true, text:'minutes', font:{size:10}}})}}});
+  }
+}
+function renderChain(){
+  const model = buildChainModel();
+  renderChainKpis(model);
+  renderChainViz(model);
+  renderChainRevisions(model);
+  renderChainTable(model);
+  renderChainCharts(model);
+}
+
+async function verifyWholeChain(){
+  const verdict = document.getElementById('chainVerdict'), btn = document.getElementById('verifyChainBtn');
+  verdict.className = 'verdict wait'; verdict.textContent = 'Checking…'; btn.disabled = true;
+  try {
+    if (LIVE){ try { chainData = await apiGet('/audit/chain', 10000); } catch(e){ /* keep what is on screen */ } }
+    renderChain();
+    const model = buildChainModel();
+    const broken = model.blocks.find(b=>b.linkOk === false);
+    if (broken){
+      verdict.className = 'verdict bad';
+      verdict.textContent = '✕ Link broken at block '+broken.index+' — the block before it no longer matches what it recorded';
+      focusBlock(broken.index);
+      return;
+    }
+    const unchecked = model.blocks.some((b,i)=>i>0 && b.linkOk === null);
+    const linkCount = Math.max(model.blocks.length-1, 0);
+    let text = unchecked ? 'Links could not be fully checked here' : '✓ All '+linkCount+' link'+(linkCount===1?'':'s')+' hold';
+    let bad = false;
+    if (LIVE){
+      const current = model.blocks.filter(b=>b.kind === 'current' && b.investigationId != null);
+      const results = await Promise.all(current.map(b=>apiGet('/audit/'+b.investigationId+'/verify').then(r=>r.verified, ()=>null)));
+      const good = results.filter(r=>r === true).length;
+      const mismatch = results.filter(r=>r === false).length;
+      if (current.length) text += ' · '+good+' of '+current.length+' current records match their anchored hash';
+      if (mismatch) bad = true;
+    } else {
+      text += ' (demo data)';
+    }
+    verdict.className = 'verdict '+(bad ? 'bad' : 'ok');
+    verdict.textContent = bad ? text.replace('✓','✕') : text;
+  } catch(e){
+    verdict.className = 'verdict bad'; verdict.textContent = 'Could not verify: '+e.message;
+  } finally { btn.disabled = false; }
+}
+document.getElementById('verifyChainBtn').addEventListener('click', verifyWholeChain);
+
+/* =====================================================================
+   Model insights extras
+   ===================================================================== */
+function renderModelExtras(){
+  const rf = modelInsights && modelInsights.random_forest;
+  const box = document.getElementById('cmBox');
+  const cm = rf && rf.confusion;
+  if (cm){
+    const r0 = cm.tn + cm.fp, r1 = cm.fn + cm.tp, n = r0 + r1;
+    const a = (v, row)=>(0.12 + 0.5*Math.sqrt(row ? v/row : 0)).toFixed(2);
+    const cell = (cls, tag, v, row, what)=>`<div class="cm-cell ${cls}" style="--a:${a(v,row)}" title="${what}"><small>${tag}</small><b>${fmtN(v)}</b><span>${row ? (v/row*100).toFixed(1) : 0}% of row</span></div>`;
+    box.innerHTML = `<div class="cm">
+      <div></div><div class="cm-h">Predicted normal</div><div class="cm-h">Predicted abnormal</div>
+      <div class="cm-r">Actually normal</div>${cell('good','TRUE NEGATIVE',cm.tn,r0,'Normal meters correctly left alone')}${cell('bad','FALSE POSITIVE',cm.fp,r0,'Normal meters flagged as abnormal')}
+      <div class="cm-r">Actually abnormal</div>${cell('bad','FALSE NEGATIVE',cm.fn,r1,'Abnormal meters the model missed')}${cell('good','TRUE POSITIVE',cm.tp,r1,'Abnormal meters correctly flagged')}
+    </div>`;
+    document.getElementById('cmNote').textContent = 'n = '+fmtN(n)+' meters in the held-out test split'+(rf.accuracy != null ? ' · accuracy '+(rf.accuracy*100).toFixed(1)+'%' : '');
+  } else {
+    box.innerHTML = '<div class="empty-static">'+(LIVE ? 'Retrain the Random Forest with --metrics-out to save its classification report.' : 'Connect the backend to see the Random Forest confusion matrix.')+'</div>';
+  }
+  if (!HAS_CHART) return;
+
+  // precision / recall / F1
+  const pc = rf && rf.per_class;
+  chartEmpty('mdlClass', !(pc && pc.normal && pc.abnormal), LIVE ? 'No per-class metrics saved' : 'Connect the backend to see per-class metrics');
+  if (pc && pc.normal && pc.abnormal){
+    mkChart('mdlClass', {type:'bar',
+      data:{labels:['Normal','Abnormal'], datasets:[
+        {label:'Precision', data:[pc.normal.precision, pc.abnormal.precision], backgroundColor:C.blue, borderRadius:4},
+        {label:'Recall', data:[pc.normal.recall, pc.abnormal.recall], backgroundColor:C.violet, borderRadius:4},
+        {label:'F1', data:[pc.normal['f1-score'], pc.abnormal['f1-score']], backgroundColor:C.amber, borderRadius:4}]},
+      options:{responsive:true, maintainAspectRatio:false,
+        plugins:{legend:legendBottom, tooltip:{callbacks:{label:c=>c.dataset.label+': '+Number(c.parsed.y).toFixed(3)}}},
+        scales:{x:axisX(), y:axisY({min:0, max:1})}}});
+  }
+
+  // blend weights (these are the real weights when the server reported them)
+  const f = (modelInsights && modelInsights.formula) || {rf_weight:0.55, kmeans_weight:0.45};
+  mkChart('mdlBlend', {type:'doughnut',
+    data:{labels:['Random Forest','K-means'], datasets:[{data:[f.rf_weight, f.kmeans_weight], backgroundColor:[C.blue, C.violet], borderColor:'#121826', borderWidth:3, hoverOffset:4}]},
+    options:{responsive:true, maintainAspectRatio:false, cutout:'68%',
+      plugins:{legend:legendBottom, centerText:{text:'Risk', sub:'score'},
+        tooltip:{callbacks:{label:c=>c.label+': '+Math.round(c.parsed*100)+'% of the score'}}}}});
+
+  // behaviour profile by tier
+  const tp = analytics && analytics.tier_profile;
+  chartEmpty('mdlRadar', !tp, LIVE ? 'Needs data/features.csv on the server' : 'Connect the backend to see tier profiles');
+  if (tp){
+    const lab = tp.features.map(k=>FEATURE_LABELS[k] || k);
+    const ds = (name, key, col, fill)=>({label:name, data:tp[key], borderColor:col, backgroundColor:fill, pointBackgroundColor:col, pointRadius:2.5, borderWidth:2});
+    mkChart('mdlRadar', {type:'radar',
+      data:{labels:lab, datasets:[ds('Low','low',C.green,'rgba(63,191,143,.10)'), ds('Medium','medium',C.amber,'rgba(240,169,62,.10)'), ds('High','high',C.red,'rgba(229,72,77,.16)')]},
+      options:{responsive:true, maintainAspectRatio:false,
+        plugins:{legend:legendBottom},
+        scales:{r:{min:0, max:100, ticks:{display:true, stepSize:25, backdropColor:'transparent', color:'#5B6478', font:{size:9}}, grid:{color:'#232C3D'}, angleLines:{color:'#232C3D'}, pointLabels:{color:'#8A93A6', font:{size:10}}}}}});
+  }
+
+  // cumulative importance
+  const fi = rf && rf.feature_importance;
+  chartEmpty('mdlPareto', !fi, LIVE ? 'No feature importance saved' : 'Connect the backend to see feature importance');
+  if (fi){
+    const entries = Object.entries(fi).sort((x,y)=>y[1]-x[1]);
+    const total = entries.reduce((s,e)=>s+e[1],0) || 1;
+    let run = 0; const cum = entries.map(e=>+((run += e[1])/total*100).toFixed(1));
+    mkChart('mdlPareto', {data:{labels:entries.map(e=>FEATURE_LABELS[e[0]] || e[0]), datasets:[
+        {type:'bar', label:'Importance', data:entries.map(e=>+(e[1]*100).toFixed(1)), backgroundColor:'rgba(240,169,62,.75)', borderRadius:4, yAxisID:'y'},
+        {type:'line', label:'Cumulative share', data:cum, borderColor:C.blue, backgroundColor:C.blue, tension:.25, pointRadius:3, borderWidth:2, yAxisID:'y1'}]},
+      options:{responsive:true, maintainAspectRatio:false,
+        plugins:{legend:legendBottom, tooltip:{callbacks:{label:c=>c.dataset.label+': '+c.parsed.y+'%'}}},
+        scales:{x:axisX({ticks:{maxRotation:40, minRotation:30, font:{size:9.5}}}),
+          y:axisY({beginAtZero:true, ticks:{callback:v=>v+'%', font:{size:10}}}),
+          y1:{position:'right', min:0, max:100, grid:{display:false}, ticks:{callback:v=>v+'%', font:{size:10}}}}}});
+  }
+}
+
+/* =====================================================================
+   Analyze meter charts
+   ===================================================================== */
+function dayKey(ts){
+  const s = String(ts).trim();
+  if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0,10);
+  const d = new Date(s), p = n=>String(n).padStart(2,'0');
+  return d.getFullYear()+'-'+p(d.getMonth()+1)+'-'+p(d.getDate());
+}
+function renderAnalyzeCharts(result, readings){
+  if (!HAS_CHART) return;
+  const byDay = {};
+  (readings || []).forEach(r=>{ const k = dayKey(r.timestamp); byDay[k] = (byDay[k]||0) + r.consumption_kwh; });
+  const days = Object.keys(byDay).sort();
+  const vals = days.map(d=>+byDay[d].toFixed(3));
+
+  chartEmpty('anUsage', !days.length, 'No readings to chart');
+  if (days.length){
+    const ma = vals.map((_,i)=>{ const w = vals.slice(Math.max(0,i-6), i+1); return +(w.reduce((a,b)=>a+b,0)/w.length).toFixed(3); });
+    const mean = vals.reduce((a,b)=>a+b,0)/vals.length;
+    document.getElementById('anUsageNote').textContent = days.length+' day'+(days.length===1?'':'s')+' · mean '+mean.toFixed(2)+' kWh · peak '+Math.max.apply(null, vals).toFixed(2)+' kWh';
+    mkChart('anUsage', {type:'line',
+      data:{labels:days, datasets:[
+        {label:'Daily kWh', data:vals, borderColor:C.amber, backgroundColor:'rgba(240,169,62,.10)', fill:true, tension:.25, pointRadius:days.length <= 45 ? 3 : 0, borderWidth:2},
+        {label:'7-day average', data:ma, borderColor:C.blue, backgroundColor:C.blue, tension:.3, pointRadius:0, borderWidth:2},
+        {label:'Overall mean', data:days.map(()=>+mean.toFixed(3)), borderColor:'#5B6478', borderDash:[5,5], pointRadius:0, borderWidth:1.5}]},
+      options:{responsive:true, maintainAspectRatio:false, interaction:{mode:'index', intersect:false},
+        plugins:{legend:legendBottom},
+        scales:{x:axisX({ticks:{maxRotation:0, autoSkip:true, maxTicksLimit:8, font:{size:10}}}), y:axisY({beginAtZero:true})}}});
+  }
+
+  // weekday profile
+  const sums = Array(7).fill(0), cnt = Array(7).fill(0);
+  days.forEach((d,i)=>{ const w = new Date(d+'T00:00:00Z').getUTCDay(); sums[w] += vals[i]; cnt[w]++; });
+  const order = [1,2,3,4,5,6,0], names = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  chartEmpty('anWeekday', !days.length, 'No readings to chart');
+  if (days.length){
+    mkChart('anWeekday', {type:'bar',
+      data:{labels:names, datasets:[{data:order.map(w=>cnt[w] ? +(sums[w]/cnt[w]).toFixed(3) : null),
+        backgroundColor:order.map(w=>(w===0||w===6) ? C.amber : C.blue), borderRadius:4}]},
+      options:{responsive:true, maintainAspectRatio:false,
+        plugins:{legend:{display:false}, tooltip:{callbacks:{label:c=>c.parsed.y+' kWh average · '+cnt[order[c.dataIndex]]+' day(s)'}}},
+        scales:{x:axisX(), y:axisY({beginAtZero:true})}}});
+  }
+
+  // score composition
+  const f = result.formula || {rf_weight:0.55, kmeans_weight:0.45, high_threshold:THRESH.high, medium_threshold:THRESH.medium};
+  const rfPart = +(f.rf_weight*result.rf_probability).toFixed(4), kmPart = +(f.kmeans_weight*result.kmeans_anomaly_score).toFixed(4);
+  mkChart('anScore', {type:'bar',
+    data:{labels:['Risk score'], datasets:[
+      {label:'Random Forest share', data:[rfPart], backgroundColor:C.blue, borderRadius:4},
+      {label:'K-means share', data:[kmPart], backgroundColor:C.violet, borderRadius:4}]},
+    options:{indexAxis:'y', responsive:true, maintainAspectRatio:false, layout:{padding:{top:18}},
+      plugins:{legend:legendBottom,
+        refLines:{lines:[{value:f.medium_threshold, label:'medium '+f.medium_threshold, color:C.amber}, {value:f.high_threshold, label:'high '+f.high_threshold, color:C.red}]},
+        tooltip:{callbacks:{label:c=>c.dataset.label+': '+c.parsed.x+' of '+result.risk_score}}},
+      scales:{x:axisX({stacked:true, min:0, max:1, grid:{color:gridColor}}), y:axisY({stacked:true, grid:{display:false}, ticks:{display:false}})}}});
+
+  // features vs dataset average
+  const rows = (result.features || []).filter(x=>x.dataset_average != null && x.dataset_average > 0 && x.value != null);
+  chartEmpty('anFeatures', !rows.length, 'No dataset averages available to compare against');
+  if (rows.length){
+    const ratios = rows.map(x=>Math.min(5, Math.max(0, x.value / x.dataset_average)));
+    mkChart('anFeatures', {type:'bar',
+      data:{labels:rows.map(x=>FEATURE_LABELS[x.feature] || x.feature), datasets:[{data:ratios.map(v=>+v.toFixed(3)),
+        backgroundColor:rows.map((x,i)=>x.value > x.dataset_average ? C.amber : C.blue), borderRadius:4, barThickness:14}]},
+      options:{indexAxis:'y', responsive:true, maintainAspectRatio:false, layout:{padding:{top:16}},
+        plugins:{legend:{display:false}, refLines:{lines:[{value:1, label:'dataset average', color:'#B7BFCF'}]},
+          tooltip:{callbacks:{label:c=>{ const x = rows[c.dataIndex]; return x.value+' against an average of '+x.dataset_average+' ('+(x.value/x.dataset_average).toFixed(2)+'×)'; }}}},
+        scales:{x:axisX({min:0, max:5, grid:{color:gridColor}, ticks:{callback:v=>v+'×', font:{size:10}}}), y:axisY({grid:{display:false}})}}});
+  }
+}
+
+/* ---------------- Boot sequence ---------------- */
+async function boot(){
+  try {
+    await apiGet('/health');
+    setConnStatus(true);
+    await refreshAllFromAPI();
+  } catch(e){
+    setConnStatus(false);
+    // Any throw in refresh lands here, including a bad field after /health
+    // already succeeded. Keep the real reason instead of always saying unreachable.
+    document.getElementById('syncText').textContent =
+      'Demo mode — ' + (e && e.message ? e.message : 'backend not reachable');
+    loadDemoState();
+    analytics = analyticsFromConsumers(); chainData = null;
+    renderConsumers('all');
+    renderAlerts();
+    renderInvestigations();
+    renderChain();
+    updateRiskChart();
+    renderStats();
+    renderLoadChart();
+    renderModelInsights();
+  }
+  // Analyze Meter's own view is hidden until opened; switchView('analyze')
+  // triggers its fresh health re-check at that point (see updateAnalyzeAvailability).
+}
+boot();
+
+</script>
+</body>
+</html>

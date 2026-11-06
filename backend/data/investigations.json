@@ -1,0 +1,54 @@
+[
+  {
+    "investigation_id": 1,
+    "alert_id": 1,
+    "meter_id": "CF42F8B2C3D51086ABF999E011182499",
+    "inspector": "Insp. D. Fernandes",
+    "opened_at": "2026-11-03",
+    "closed_at": null,
+    "outcome": "pending",
+    "notes": "Field visit: seal intact, no bypass, meter serial matches the account. The 0.94 Random Forest probability and 0.58 K-means score come from the usage pattern, mainly a steep long-term trend, high day-to-day variance, and a high peak versus the SGCC averages on this panel. No physical evidence of theft. Score stays a priority flag only.",
+    "risk_score": 0.7808,
+    "audit_anchor": {
+      "payload_hash": "1e4c3a79fbcf7accdfe522bb06c80fb6da67fbfd069119c2088b1087ef5399ba",
+      "chain_tx_ref": "block#1",
+      "previous_hash": "447bcebfb7efabe24023bc012e05cc58b313bc298c9c3be4602771056cf0d725",
+      "anchored_at": 1793720302.3881562,
+      "sepolia_tx": "0xb6ab585c01d7258c01281ae95a3bf735ceb9933dba1610090b4ada24c9f08d16"
+    },
+    "audit_payload": {
+      "alert_id": 1,
+      "investigation_id": 1,
+      "risk_score": 0.7808,
+      "model_version": "rf-v2.3",
+      "investigation_outcome": "pending",
+      "timestamp": "2026-11-03T15:38:22.386843"
+    }
+  },
+  {
+    "investigation_id": 2,
+    "alert_id": 2,
+    "meter_id": "AD593EF7A755AAA7B84654D882A859FD",
+    "inspector": "Insp. A. Kulkarni",
+    "opened_at": "2026-11-03",
+    "closed_at": null,
+    "outcome": "pending",
+    "notes": "",
+    "risk_score": 0.8348,
+    "audit_anchor": {
+      "payload_hash": "8b9e4f0c051659176e57f20e9239841c9657f262cb7d0042bd968728c706ab89",
+      "chain_tx_ref": "block#2",
+      "previous_hash": "8dd52c40cdf5f775c296b8c9c0bed45dc4c73f6f3f7f85d5169538df248b7219",
+      "anchored_at": 1793721554.0115175,
+      "sepolia_tx": "0x705b128a1533646348b28dc7ffc01f2384630755037a121b6f0e5ec926b3d23f"
+    },
+    "audit_payload": {
+      "alert_id": 2,
+      "investigation_id": 2,
+      "risk_score": 0.8348,
+      "model_version": "rf-v2.3",
+      "investigation_outcome": "pending",
+      "timestamp": "2026-11-03T15:59:14.011415"
+    }
+  }
+]
